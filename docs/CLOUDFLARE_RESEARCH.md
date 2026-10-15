@@ -15,7 +15,7 @@ Stan dokumentacji sprawdzony przez Supervisora: **15.10.2026**. Źródłem są o
 
 Dodatkowo D1 Free dopuszcza 50 zapytań na jedno wywołanie Workera, 100 parametrów wiązanych na pojedyncze zapytanie i 100 KB tekstu SQL. `DB.batch()` nie podnosi limitu liczby zapytań. Upload 100 stron i zatwierdzanie wielu pozycji wymagają grupowania rekordów w zapytania wielowierszowe albo ograniczenia wielkości operacji. Źródło techniczne limitów: https://raw.githubusercontent.com/cloudflare/cloudflare-docs/production/src/content/docs/d1/platform/limits.mdx (weryfikacja Backend Agenta w tej sesji).
 
-Neurons nie są tokenami. Limit wywołań StudentOS nie gwarantuje zmieszczenia się każdej analizy w dziennym limicie neurons, ponieważ koszt zależy od modelu i wejścia. Dostępność katalogowa nie dowodzi dostępności na konkretnym koncie. Potrzebne są autoryzacja Cloudflare oraz rzeczywisty test bindingu.
+Neurons nie są tokenami. Limit wywołań StudentOS nie gwarantuje zmieszczenia się każdej analizy w dziennym limicie neurons, ponieważ koszt zależy od modelu i wejścia. Dostępność katalogowa nie dowodzi dostępności na konkretnym koncie. Dla tego konta autoryzację i rzeczywisty test GLM już wykonano; inne konta i modele wymagają własnej kontroli.
 
 ## Źródła
 
@@ -35,8 +35,8 @@ Neurons nie są tokenami. Limit wywołań StudentOS nie gwarantuje zmieszczenia 
 3. Wyniki dostawcy `usage`, jeśli wystąpią, są przechowywane jako metryki zwrócone przez model. Brak metryk nie oznacza zerowego zużycia.
 4. W aplikacji nie wyświetla się szacunków jako pomiaru konta Cloudflare ani jako faktury.
 5. Po wyczerpaniu AI zachowujemy dokument, stan analizy i dostęp do ręcznego zarządzania studiami. Wznowienie następuje świadomie po odnowieniu limitu.
-6. Testy lokalne, mocki i build nie potwierdzają limitu CPU produkcyjnego Workera. Mierzymy go w Cloudflare po uzyskaniu autoryzacji.
+6. Testy lokalne, mocki i build nie potwierdzają limitu CPU produkcyjnego Workera. Dokładny pomiar wymaga odrębnego odczytu telemetrii Cloudflare; dotychczas go nie wykonano.
 
 ## Status weryfikacji integracji
 
-Weryfikacja dokumentacji: wykonana. Aktualizacja15.10.2026: wdrożenie Workers Free, zdalne migracjeD1 oraz cztery rzeczywiste wywołania GLM zostały potwierdzone (run38783763164). OAuth skonfigurowany i rozpoczęcie302 sprawdzone (run38784110083). Dokładne Neurons, pełny callback właściciela i produkcyjne CPU nadal wymagają odbioru. Nie zastępujemy tych kroków symulowanymi wynikami.
+Weryfikacja dokumentacji: wykonana. Aktualizacja **15.10.2026**: wdrożenie Workers Free, migracje zdalnego D1 i rzeczywisty GLM są potwierdzone. Właściciel potwierdził udane logowanie po poprawce Client ID. Dokładnych neurons i produkcyjnego CPU nie zmierzono. Oprócz testów bindingów wykonano pełny przepływ AI przez produkcyjne HTTPS na Workers Free. Potwierdza to wykonalność przetestowanej próbki; bez dokładnej telemetrii CPU nie gwarantuje wszystkich dużych dokumentów. Dowody oraz granice wyników: [TEST_REPORT.md](TEST_REPORT.md).

@@ -1,6 +1,6 @@
 # Decyzje techniczne
 
-Data rozpoczęcia: 15.10.2026. Decyzje opisują stan projektu i ograniczenia, bez sugerowania zakończonego wdrożenia.
+Data rozpoczęcia: 15.10.2026. Decyzje opisują stan projektu i ograniczenia. Wdrożenie oraz logowanie właściciela są potwierdzone; pełny odbiór wszystkich funkcji pozostaje odrębnym etapem.
 
 ## ADR-001: Jeden Worker i D1
 
@@ -46,7 +46,7 @@ Samo sprawdzenie istnienia uruchomienia przed `INSERT` nie zabezpiecza przed wy�
 
 Pierwsza próba wdrożenia zgłosiła `incomplete input: SQLITE_ERROR 7500` dla migracji `0001`, chociaż SQLite, Miniflare i lokalny splitter Wrangler przechodziły. Analiza kodu Wrangler 4.151 wykazała różne ścieżki: lokalnie używa `unstable_splitSqlQuery`, a zdalne `migrations apply` przekazuje cały plik i znacznik migracji jako jedno pole `sql` do REST `/query`. Nie mamy dowodu, że błąd pochodzi z lokalnego splittera.
 
-Przygotowano minimalną poprawkę zgodności: w triggerach `0001` i `0003` wyrażenia `SELECT CASE WHEN warunek THEN RAISE(ABORT,...) END` zastępuje równoważne `SELECT RAISE(ABORT,...) WHERE warunek`. Usunięto średniki z komentarzy SQL. Warunki kontroli właściciela, rodzaj przerwania i komunikaty pozostają takie same. Regresja `tests/integration/migration-transport.test.ts` wykonuje faktyczny splitter zainstalowanego Wrangler, wszystkie migracje i 20 prób przekroczenia własności w D1 Miniflare. Wynik lokalny nie potwierdza jeszcze usunięcia błędu zdalnego; musi go potwierdzić ponowny run CI.
+Przygotowano minimalną poprawkę zgodności: w triggerach `0001` i `0003` wyrażenia `SELECT CASE WHEN warunek THEN RAISE(ABORT,...) END` zastępuje równoważne `SELECT RAISE(ABORT,...) WHERE warunek`. Usunięto średniki z komentarzy SQL. Warunki kontroli właściciela, rodzaj przerwania i komunikaty pozostają takie same. Regresja `tests/integration/migration-transport.test.ts` wykonuje faktyczny splitter zainstalowanego Wrangler, wszystkie migracje i 20 prób przekroczenia własności w D1 Miniflare. Ponowny przebieg `38782784943` potwierdził zastosowanie wszystkich trzech migracji zdalnie. Po tym sukcesie migracje są niezmienne; przyszłe zmiany wymagają nowej migracji.
 
 Jest to wyjątek od utrzymywania zastosowanych migracji jako niezmiennych: lokalnie zastosowana składnia ma identyczne działanie, a pierwsza zdalna migracja nie została zatwierdzona. Nie wprowadzamy własnego protokołu migracji ani dodatkowej usługi.
 
@@ -66,6 +66,18 @@ Supervisor sprawdził aktualną oficjalną dokumentację przed implementacją. W
 - [GLM-4.7-Flash — karta modelu](https://developers.cloudflare.com/workers-ai/models/glm-4.7-flash/)
 - [Gemma-4-26B-A4B-IT — karta modelu](https://developers.cloudflare.com/workers-ai/models/gemma-4-26b-a4b-it/)
 
-Identyfikator preferowany: `@cf/zai-org/glm-4.7-flash`; alternatywny: `@cf/google/gemma-4-26b-a4b-it`. W sprawdzonej dokumentacji modele te nie znajdowały się na liście wymagającej płatnego planu. GLM obsługuje binding `env.AI.run` i wiadomości; preferowany parametr limitu generacji to `max_completion_tokens` (starszy `max_tokens` jest oznaczony jako przestarzały). Brak własnego wywołania na koncie docelowym pozostaje ograniczeniem weryfikacji, niezależnie od dostępności dokumentacji.
+Identyfikator preferowany: `@cf/zai-org/glm-4.7-flash`; alternatywny: `@cf/google/gemma-4-26b-a4b-it`. W sprawdzonej dokumentacji modele te nie znajdowały się na liście wymagającej płatnego planu. GLM obsługuje binding `env.AI.run` i wiadomości; preferowany parametr limitu generacji to `max_completion_tokens` (starszy `max_tokens` jest oznaczony jako przestarzały). Rzeczywiste wywołania GLM na koncie docelowym potwierdzono; wyniki i nieudane próby są rozdzielone w `TEST_REPORT.md`. Gemma pozostaje konfigurowalną alternatywą bez osobnego wyniku live.
 
 Aktualna linia `@cloudflare/workers-types` to major 5; sprawdzona wersja rejestru `5.20261015.1`. Żądanie hipotetycznej wersji `4.20261001.0` nie działało. Supervisor poprawił zależność podczas foundation. Zainstalowaną wersję należy odczytywać z lockfile, a nie z tej notatki historycznej.
+
+## ADR-012: Referencje do dosłownych źródeł
+
+Rzeczywiste próby wykazały, że model potrafił poprawiać pisownię cytatu i naruszać kontrolę dosłowności. Zamiast osłabiać walidację, DocumentAgent i DeadlineAgent wybierają `{ref_id}` z katalogu fragmentów. Serwer odtwarza oryginalną stronę i tekst. Nieznane odwołanie pozostaje błędem. Publiczne kontrakty `{page, quote}`, limity oraz końcowa kontrola źródeł pozostają.
+
+## ADR-013: Uzgodnienie ID bez podnoszenia zaufania
+
+ReviewAgent może pomijać lub mylić identyfikatory. Zachowujemy jego pierwotne dane i osobne metadane uzgodnienia; nieznane, pominięte, powtórzone lub sprzeczne pozycje nie są automatycznie akceptowane. Wynik nadal podlega niezależnemu przeglądowi. Cache v2 oddziela wyniki po zmianie logiki walidacji.
+
+## ADR-014: Cztery miejsca na analizy przy niezmienionym budżecie wywołań
+
+Pierwotny limit 2 analiz dziennie potrafił zablokować użytkownika po dwóch nieudanych próbach, mimo wykorzystania tylko części budżetu wywołań. Domyślny `MAX_ANALYSES_PER_DAY` zmieniono na 4. Limity 24 wywołań dziennie, 12 na run, jednego retry i 1500 tokenów odpowiedzi pozostają. Zwiększa to liczbę możliwych krótkich prób bez zwiększania maksymalnej dobowej liczby wywołań. Nie resetujemy ani nie refundujemy zapisanych rezerwacji. Zmianę potwierdził pełny zestaw 128/128 i wdrożenie `5b0d01c` w przebiegu `38787614257`. Nie oznacza to automatycznie sukcesu ponowionego testu produkcyjnego AI.

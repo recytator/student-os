@@ -4,7 +4,7 @@
 
 **Stan odbioru:** [ACCEPTANCE.md](ACCEPTANCE.md) mapuje kryteria użytkownika na implementację, lokalne dowody i blokady produkcyjne.
 
-**Zasada prezentacji:** oddzielamy kod zaimplementowany, testy wykonane lokalnie, testy z podstawionym modelem oraz zweryfikowane działanie produkcyjne. Źródłem bieżących wyników jest [TEST_REPORT.md](TEST_REPORT.md). Publikacja i konfiguracja OAuth są wykonane; rozpoczęcie logowania sprawdzono w produkcji. Rzeczywisty test czterech ról Workers AI oraz zatwierdzenia w zdalnym D1 jest zapisany w [evidence/2026-10-15-live-exact.json](evidence/2026-10-15-live-exact.json). Handler testu działał lokalnie ze zdalnymi bindingami; nie utożsamiaj tego z odebranym fizycznym telefonem i pełnym produkcyjnym OAuth.
+**Zasada prezentacji:** oddzielamy kod zaimplementowany, testy wykonane lokalnie, testy z podstawionym modelem oraz zweryfikowane działanie produkcyjne. Źródłem bieżących wyników jest [TEST_REPORT.md](TEST_REPORT.md). Publikacja i konfiguracja OAuth są wykonane; właściciel potwierdził świeże logowanie i pulpit. Pełny produkcyjny test HTTPS z rzeczywistym GLM i D1 jest zapisany w [production-ai.json](evidence/2026-10-15-production-ai.json). Odrębne wcześniejsze testy działały na loopback ze zdalnymi bindingami. Żaden z tych dowodów nie zastępuje odbioru fizycznego telefonu ani dokładnego pomiaru CPU.
 
 ## Plan wystąpienia
 
@@ -119,7 +119,7 @@ Przed pokazem wykonaj próbę na tym samym koncie i w tej samej sieci. Zapisz id
 11. Jeśli pozostaje czas, zaimportuj `tests/fixtures/syllabus-ambiguous.pdf`: data `12.01` bez roku ma pozostać niepełna; powtórzone kolokwium powinno być wykryte; instrukcja z PDF próbująca zmienić zachowanie systemu nie jest poleceniem aplikacji.
 12. Otwórz `tests/fixtures/scan-no-text.pdf`: pusty plik testowy reprezentuje brak warstwy tekstowej, a aplikacja powinna wyświetlić informację o OCR. Nie jest to rzeczywisty skan obrazu i nie testuje jakości OCR.
 
-**Wariant bez autoryzacji AI:** pokaż działający import/CRUD oraz raport testów z podstawionym bindingiem i jawnie zakończ pokaz przed rzeczywistą analizą. Powiedz: „Integracja z providerem jest zaimplementowana, ale rzeczywiste wywołanie na koncie Cloudflare nie zostało jeszcze zweryfikowane”. To ograniczenie demonstracji, nie dowód spełnienia kryterium produkcyjnego.
+**Wariant przy niedostępności AI lub wyczerpanym limicie:** pokaż działający import/CRUD oraz zapisane rzeczywiste dowody z `docs/evidence/`. Powiedz, którego historycznego wykonania dotyczą. Nie pokazuj archiwum jako bieżącego wywołania ani mocka jako modelu.
 
 ## Testy i ocena trafności
 
@@ -176,7 +176,7 @@ Zlecenia były rzeczywistymi osobnymi zadaniami agentów we wspólnym workspace.
 
 Według dokumentacji sprawdzonej 15.10.2026 Free obejmuje 10 000 neurons Workers AI dziennie; Workers ma m.in. 100 000 żądań/dzień i 10 ms CPU; D1 ma 5 mln wierszy odczytu/dzień i 100 tys. zapisu/dzień. Pełne źródła: [CLOUDFLARE_RESEARCH.md](CLOUDFLARE_RESEARCH.md). To limity planu, nie pomiar wykorzystania konta. Brak automatycznej aktywacji Paid.
 
-Własne limity: PDF 10 MB / 100 stron / 120 000 znaków; wejście LLM 64 000 znaków JSON; odpowiedź 1500 tokenów; 2 analizy i 24 wywołania dziennie na użytkownika; do 12 wywołań, 1 retry i 1 poprawki planu na run. Podział bazowy po 30 000 znaków z kontekstem sąsiadów po 800 znaków zachowuje strony, lecz nie jest semantyczny. ReviewAgent widzi cytaty, a walidator deterministyczny pełne źródła. Działanie wszystkich dokumentów w limicie CPU wymaga pomiarów produkcyjnych. Model może zwrócić niepoprawny JSON; skan wymaga OCR; zamknięta przeglądarka nie gwarantuje pracy w tle. Po braku budżetu AI zadania nadal można prowadzić ręcznie.
+Własne limity: PDF 10 MB / 100 stron / 120 000 znaków; wejście LLM 64 000 znaków JSON; odpowiedź 1500 tokenów; 4 analizy i 24 wywołania dziennie na użytkownika; do 12 wywołań, 1 retry i 1 poprawki planu na run. Podział bazowy po 30 000 znaków z kontekstem sąsiadów po 800 znaków zachowuje strony, lecz nie jest semantyczny. ReviewAgent widzi cytaty, a walidator deterministyczny pełne źródła. Działanie wszystkich dokumentów w limicie CPU wymaga pomiarów produkcyjnych. Model może zwrócić niepoprawny JSON; skan wymaga OCR; zamknięta przeglądarka nie gwarantuje pracy w tle. Po braku budżetu AI zadania nadal można prowadzić ręcznie.
 
 Brak offline CRUD: po utracie połączenia PWA pokazuje komunikat, nie udaje dostępu do bazy. Zmiana terminu nie wywołuje samoczynnej ponownej analizy AI; nowe bloki wymagają zlecenia przeliczenia.
 
@@ -198,23 +198,28 @@ Dalszy rozwój: parser planu USOS, import ICS, przypomnienia i inteligentne powt
 
 **Czy 0 PLN to gwarancja nieograniczonego użycia?** Nie. Wymagane pozostanie na Free oraz twarde ograniczenia. Po wyczerpaniu darmowego budżetu AI odmawia dalszych wywołań; nie aktywujemy opłat. CRUD nadal działa, o ile także jego limity infrastruktury nie zostały wyczerpane.
 
-**Jak chronione są dane?** Serwerowa sesja i kontrola właściciela, walidacja, ograniczenie dostępu agentów, HttpOnly cookie oraz sekrety poza repozytorium. Produkcyjne OAuth trzeba sprawdzić na docelowym adresie.
+**Jak chronione są dane?** Serwerowa sesja i kontrola właściciela, walidacja, ograniczenie dostępu agentów, HttpOnly cookie oraz sekrety poza repozytorium. Produkcyjne logowanie właściciela jest potwierdzone; trwałość danych po ponownym logowaniu i drugie urządzenie wymagają osobnego odbioru.
 
 **Gdzie jest PDF?** Oryginał pozostaje lokalnie. Chmura przechowuje wyodrębniony tekst, metadane, źródła i wyniki. To ogranicza storage i transmisję, ale na innym urządzeniu nie wyświetlimy oryginalnego pliku bez ponownego udostępnienia.
 
 **Czy wyniki testów dowodzą jakości AI?** Tylko rzeczywisty benchmark modelu na referencjach mierzy ekstrakcję tego modelu. Mocki sprawdzają zachowanie aplikacji i błędy, a walidatory sprawdzają reguły. Ich raporty są rozdzielone.
 
-**Czy system już jest produkcyjny?** Odpowiedź musi wynikać z aktualnego raportu: podaj zweryfikowany URL i testy tylko jeśli istnieją. Jeśli brak autoryzacji lub testu live, nazwij konkretny niespełniony warunek.
+**Czy system już jest produkcyjny?** Tak: działa pod `studentos.recytator.workers.dev`, właściciel odebrał OAuth, a rzeczywisty test HTTPS potwierdził CRUD, cztery role GLM, zadania i bloki nauki w D1. Fizyczny Android/PWA i drugie urządzenie pozostają niezweryfikowane; nie podajemy niezmierzonego CPU jako odczytu.
 
-## Rzeczywisty przykład do slajdu z logami —15.10.2026
+## Rzeczywisty przykład do slajdu z logami — 15.10.2026
 
-Źródło: [run38783763164](https://github.com/recytator/student-os/actions/runs/38783763164), job116590775923, publiczny sylabus testowy. Model: `@cf/zai-org/glm-4.7-flash`, thinking wyłączony zgodnie z kontraktem modelu. Nie jest to mock.
+Pokaż [dowód produkcyjnego HTTPS](evidence/2026-10-15-production-ai.json) z [38787061192, próba 2](https://github.com/recytator/student-os/actions/runs/38787061192/attempts/2), zadanie `116604733105`. Harness `fd04ff0` sprawdzał wdrożony Worker `5b0d01c`. Wykonano 36 rzeczywistych żądań; model GLM ukończył cztery role.
 
-| Agent         | Czas etapu | Wynik                                                          |
-| ------------- | ---------: | -------------------------------------------------------------- |
-| DocumentAgent |     8,367s | Struktura i źródła, kontrakt passed                            |
-| DeadlineAgent |    21,257s | 5 propozycji;4 pełne daty i1 wymagająca potwierdzenia          |
-| PlannerAgent  |    17,268s | Kontrakt passed; w tym przebiegu nie zatwierdzono bloków nauki |
-| ReviewAgent   |     9,724s | 4 propozycje dopuszczone, niepełna data wymaga potwierdzenia   |
+| Etap                   | Rzeczywisty wynik       | Czas     |
+| ---------------------- | ----------------------- | -------- |
+| DocumentAgent          | Ukończony               | 5,759 s  |
+| DeadlineAgent, próba 1 | Błąd, bez zatwierdzenia | 9,070 s  |
+| DeadlineAgent, retry   | Ukończony               | 9,294 s  |
+| PlannerAgent           | Ukończony               | 37,506 s |
+| ReviewAgent            | Ukończony               | 5,224 s  |
 
-Całość83,591s,4 rezerwacje bez retry. Metryka zbioru pełnych dat:4 znalezione na4 referencyjne, precision1 i recall1. Odrębnie sprawdzono zdalne D1:4zadania,4wydarzenia,4ukończone kroki,1zatwierdzony wynik; odświeżenie zachowało committed. Dane publicznego fixture usunięto po teście, więc nie pojawiają się na prywatnym pulpicie właściciela. Nie nazywaj tych czterech wydarzeń blokami nauki.
+Całość wykorzystała 5 rezerwacji i jeden retry. Cztery pełne daty miały zgodną stronę i cytat: precision i recall = 1. Zapisano 4 zadania oraz 8 wydarzeń: 4 terminy i 4 bloki nauki; świeży odczyt potwierdził wynik. Dane testu i wyłącznie jego sesję usunięto, a rzeczywiste użycie AI zachowano. Tokeny w dowodzie dotyczą ukończonych odpowiedzi; brak metryk błędu nie oznacza zerowego zużycia.
+
+Pokaż również [zestaw konfliktowy](evidence/2026-10-15-live-ambiguous.json): 3 z 4 obowiązków, recall 0,75, F1 ≈ 0,857; dwie pełne daty poprawne, brak wymyślonego roku i odrzucona instrukcja terminu w 2099 r. W tym starszym przebiegu żaden blok nie przeszedł końcowych filtrów.
+
+Nie ukrywaj nieudanych prób cytatów i ID ReviewAgent. Nowszy sukces nie dowodzi 100% powtarzalności. Produkcyjny test potwierdza wykonalność konkretnego przepływu na Free, ale nie mierzy semantycznej trafności tytułów ani dokładnego CPU i nie gwarantuje dowolnego dużego PDF. Fizyczny Android/PWA pozostają do sprawdzenia.

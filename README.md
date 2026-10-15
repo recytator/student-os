@@ -2,7 +2,7 @@
 
 Osobisty system studiów po polsku: React/PWA, Cloudflare Workers + D1 i czterej agenci Workers AI. Dane produkcyjne są prywatne; serwer dopuszcza wyłącznie skonfigurowane konto GitHub. Bez danych przykładowych na pulpicie i bez symulowanego AI w aplikacji.
 
-**Stan:** [aplikacja wdrożona](https://studentos.recytator.workers.dev) na Workers Free, zdalne migracje D1 oraz dostępność i ochrona prywatnego API potwierdzone. Logowanie czeka na rejestrację GitHub OAuth. Test prawdziwego AI ma osobny wynik w [raporcie testów](docs/TEST_REPORT.md); testy lokalne nie zastępują odbioru produkcyjnego.
+**Stan:** [aplikacja działa](https://studentos.recytator.workers.dev) na Workers Free. Właściciel potwierdził logowanie GitHub i pulpit. Produkcyjny test wykonał 36 żądań HTTPS: CRUD, eksporty, rzeczywiste cztery role GLM oraz zapis 4 zadań i 4 bloków nauki w D1. CI: **128/128 testów i 12/12 E2E PASS**. Fizyczny Android/PWA i drugie urządzenie pozostają do odbioru. Dokładnego CPU nie zmierzono; przetestowany przepływ AI działał na Free. [Raport i dowody](docs/TEST_REPORT.md), [kryteria odbioru](docs/ACCEPTANCE.md).
 
 ## Uruchomienie lokalne
 
@@ -61,18 +61,19 @@ flowchart LR
 
 Każdy agent ma własny prompt, schemat wejścia/wyjścia i walidację. Jedno żądanie wykonuje jeden etap lub fragment; wznowienie jest jawne i nie zależy od procesu działającego w tle. Logi zawierają operacyjne metadane, ustrukturyzowane wyniki i walidację, bez ukrytego rozumowania modelu.
 
-Budżety: 10 MB PDF, 100 stron, 120 000 znaków tekstu; fragmenty do 30 000 znaków; 2 analizy i 24 wywołania modelu dziennie, 12 wywołań na przebieg, maksymalnie jedna ponowna próba. Pełne szczegóły i aktualne ograniczenia: [orkiestracja](docs/ORCHESTRATION.md).
+Budżety: 10 MB PDF, 100 stron, 120 000 znaków tekstu; fragmenty do 30 000 znaków; 4 analizy i 24 wywołania modelu dziennie, 12 wywołań na przebieg, maksymalnie jedna ponowna próba. Pełne szczegóły i aktualne ograniczenia: [orkiestracja](docs/ORCHESTRATION.md).
 
 PDF pozostaje na urządzeniu. Do D1 trafiają wyodrębniony tekst, numery stron, metadane i wyniki. Tekst przekazywany do Workers AI jest niezaufanym materiałem; agenci nie mają uprawnień do sieci ani zapisu bazy. Zadania i wydarzenia zapisuje dopiero jawne zatwierdzenie użytkownika.
 
 ## PWA na Androidzie
 
-Po wdrożeniu otwórz adres aplikacji w Chrome, zaloguj się przez GitHub, wybierz menu `⋮` → **Dodaj do ekranu głównego** → **Zainstaluj**. Instalacja wymaga HTTPS; tryb offline pokazuje komunikat bez udawania dostępu do danych w chmurze.
+Otwórz https://studentos.recytator.workers.dev w Chrome, zaloguj się przez GitHub, wybierz menu `⋮` → **Dodaj do ekranu głównego** → **Zainstaluj**. Instalacja wymaga HTTPS; tryb offline pokazuje komunikat bez udawania dostępu do danych w chmurze.
 
 ## Dokumentacja akademicka
 
 - [Architektura](docs/ARCHITECTURE.md), [decyzje](docs/DECISIONS.md), [backlog](docs/BACKLOG.md)
 - [Agenci developmentu i runtime](docs/AGENTS.md), [orkiestracja](docs/ORCHESTRATION.md)
+- [Checkpoint kontynuacji](docs/CONTINUATION.md), [rzeczywiste testy](docs/LIVE_TESTING.md)
 - [Rzeczywisty dziennik prac](docs/DEVELOPMENT_LOG.md), [raport testów](docs/TEST_REPORT.md)
 - [Prezentacja 15 min, diagramy, demo i pytania](docs/PRESENTATION.md)
 

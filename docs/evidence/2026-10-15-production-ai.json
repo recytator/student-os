@@ -1,0 +1,438 @@
+{
+  "provenance": {
+    "workflow_run": 38787061192,
+    "attempt": 2,
+    "job": 116604733105,
+    "harness_commit": "fd04ff0",
+    "deployed_worker_commit": "5b0d01c",
+    "deployment_run": 38787614257,
+    "url": "https://github.com/recytator/student-os/actions/runs/38787061192/attempts/2",
+    "note": "Actual HTTPS production Worker, actual D1 and Workers AI on owner-confirmed Workers Free. Existing real owner authenticated through temporary QA-issued session; separate browser OAuth success confirmed by owner. No raw private user data, tokens, cookies or model reasoning included. Records and temporary session removed; actual AI usage preserved."
+  },
+  "report": {
+    "status": "passed",
+    "started_at": "2026-10-15T18:43:29.848Z",
+    "origin": "https://studentos.recytator.workers.dev",
+    "namespace": "PROD-QA-c6185e82-5d06-45a5-a148-82a9082d9ed9",
+    "execution": "Actual HTTPS production Worker, static assets, D1 and optional Workers AI. A short-lived QA-issued session authenticates the existing real owner; this is NOT proof of a new OAuth login. Successful sampled requests exercised production execution limits; exact CPU time is not exposed or measured.",
+    "requests": [
+      {
+        "route": "/auth/me",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 354,
+        "response_bytes": 243,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/bootstrap",
+        "method": "GET",
+        "status": 401,
+        "duration_ms": 40,
+        "response_bytes": 90,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/subjects",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 831,
+        "response_bytes": 270,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 910,
+        "response_bytes": 419,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks/:test-id",
+        "method": "PATCH",
+        "status": 200,
+        "duration_ms": 1121,
+        "response_bytes": 419,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 500,
+        "response_bytes": 419,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/schedules",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 879,
+        "response_bytes": 371,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/events",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 878,
+        "response_bytes": 452,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/bootstrap",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 838,
+        "response_bytes": 3432,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/export.ics",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 546,
+        "response_bytes": 1110,
+        "response_type": "text/calendar",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/export",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 843,
+        "response_bytes": 27227,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/usage",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 513,
+        "response_bytes": 311,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/documents",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 1057,
+        "response_bytes": 438,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/documents/:test-id/analyze",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 1844,
+        "response_bytes": 415,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 842,
+        "response_bytes": 425,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id/advance",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 6807,
+        "response_bytes": 2049,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 746,
+        "response_bytes": 2049,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id/advance",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 10093,
+        "response_bytes": 3164,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 675,
+        "response_bytes": 3164,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id/advance",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 10431,
+        "response_bytes": 5453,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 871,
+        "response_bytes": 5453,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id/advance",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 38616,
+        "response_bytes": 7739,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 729,
+        "response_bytes": 7739,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id/advance",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 6278,
+        "response_bytes": 14504,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 691,
+        "response_bytes": 14504,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/bootstrap",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 566,
+        "response_bytes": 4141,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id/approve",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 1939,
+        "response_bytes": 15165,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/runs/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 694,
+        "response_bytes": 14554,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/documents/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 871,
+        "response_bytes": 16,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/events/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 690,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 679,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/schedules/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 719,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/subjects/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 684,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/usage",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 523,
+        "response_bytes": 312,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/auth/logout",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 247,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/auth/me",
+        "method": "GET",
+        "status": 401,
+        "duration_ms": 264,
+        "response_bytes": 90,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      }
+    ],
+    "checks": {
+      "production_authenticated_existing_owner": true,
+      "anonymous_private_api_blocked": true,
+      "crud_persisted_after_fresh_bootstrap": true,
+      "exports_ics_json_without_auth_secret_fields": true,
+      "temporary_session_logout_revoked": true
+    },
+    "ai": {
+      "requested": true,
+      "status": "passed",
+      "maximum_call_reservations": 5,
+      "call_reservations": 5,
+      "completed_agent_roles": ["document", "deadline", "planner", "review"],
+      "metrics": {
+        "method": "Complete date AND public gold page/quote; duplicate predictions are false positives. Does not score title semantics or undated requirements.",
+        "expected": 4,
+        "predicted": 4,
+        "matched": 4,
+        "precision": 1,
+        "recall": 1
+      },
+      "usage_before": {
+        "analyses": 2,
+        "calls": 5,
+        "limit_analyses": 4,
+        "limit_calls": 24
+      },
+      "usage_after": {
+        "analyses": 3,
+        "calls": 10,
+        "limit_analyses": 4,
+        "limit_calls": 24
+      },
+      "remaining_daily_analyses": 1,
+      "note": "No AI usage reservations are refunded. Provider charges/neuron counts are not inferred from these counters.",
+      "model": "@cf/zai-org/glm-4.7-flash",
+      "committed_test_tasks": 4,
+      "committed_test_events": 8,
+      "committed_test_study_blocks": 4,
+      "operational_steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "model": "@cf/zai-org/glm-4.7-flash",
+          "duration_ms": 5759,
+          "attempt": 1,
+          "input_tokens": 877,
+          "output_tokens": 327
+        },
+        {
+          "agent": "deadline",
+          "state": "failed",
+          "model": "@cf/zai-org/glm-4.7-flash",
+          "duration_ms": 9070,
+          "attempt": 1,
+          "input_tokens": null,
+          "output_tokens": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "model": "@cf/zai-org/glm-4.7-flash",
+          "duration_ms": 9294,
+          "attempt": 2,
+          "input_tokens": 1383,
+          "output_tokens": 577
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "model": "@cf/zai-org/glm-4.7-flash",
+          "duration_ms": 37506,
+          "attempt": 2,
+          "input_tokens": 1433,
+          "output_tokens": 705
+        },
+        {
+          "agent": "review",
+          "state": "completed",
+          "model": "@cf/zai-org/glm-4.7-flash",
+          "duration_ms": 5224,
+          "attempt": 2,
+          "input_tokens": 2371,
+          "output_tokens": 194
+        }
+      ]
+    },
+    "cleanup": {
+      "records": "all_exact_test_records_deleted",
+      "session": "only_exact_temporary_session_deleted"
+    },
+    "error": null,
+    "finished_at": "2026-10-15T18:45:12.661Z"
+  }
+}

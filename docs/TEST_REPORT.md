@@ -1,110 +1,131 @@
 # Raport testów StudentOS
 
-Raport aktualizowany przez rzeczywiście uruchomionego QA Agenta. Data: 15.10.2026. Wyników lokalnych nie należy utożsamiać z wdrożeniem produkcyjnym ani dostępem do Cloudflare Workers AI.
+Stan: **15.10.2026**. Rozdzielamy testy lokalne, testy handlera ze zdalnymi bindingami, produkcyjne HTTP i odbiór użytkownika. Dowód z jednej warstwy nie zastępuje pozostałych.
+
+## Aktualny stan weryfikacji
+
+| Zakres                                    | Potwierdzony wynik                                                                                 | Granica dowodu                                                                                        |
+| ----------------------------------------- | -------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Ostatni pełny lokalny Vitest              | **128/128 PASS**, 15 plików, 24,18 s; lint i build PASS dla `5b0d01c`                              | Pełny zestaw obejmuje katalog źródeł, harness i limit 4 analiz; format dokumentacji sprawdzany osobno |
+| Nowy katalog źródeł                       | **8 testów katalogu PASS**, objęte pełnym zestawem 120/120                                         | 8 testów zabezpieczeń harnessu włączono do późniejszego pełnego zestawu 128/128                       |
+| Lokalny E2E                               | **12/12 PASS**, po 6 scenariuszy mobile i desktop                                                  | Emulacja Chromium; nie fizyczny Android                                                               |
+| UI i PDF.js                               | Rzeczywisty parser odczytał dwie strony; sprawdzono daty, 7 ekranów i brak poziomego przepełnienia | Testy lokalne oraz przegląd zrzutów; 21 kombinacji ekranów przy 320/390/1440 px                       |
+| PWA                                       | Manifest, ikony, rejestracja SW i brak prywatnego `/api/` w cache potwierdzone lokalnie            | Instalacja na fizycznym Androidzie niezweryfikowana                                                   |
+| Wdrożenie                                 | **PASS:** https://studentos.recytator.workers.dev, strona/health 200 i anonimowe prywatne API 401  | Dostępność i ochrona endpointów nie oznaczają pełnego odbioru CRUD/AI przez HTTPS                     |
+| Zdalne D1                                 | Migracje 0001–0003 zastosowane; rzeczywisty commit danych fixture potwierdzony                     | Dane testowe usunięto po bezpośredniej kontroli                                                       |
+| Prawdziwy GLM                             | Trzy ukończone przebiegi czterech ról; wyniki poniżej                                              | Inne próby zakończyły się błędami walidacji; brak gwarancji powtarzalności                            |
+| GitHub OAuth właściciela                  | **PASS według odbioru użytkownika:** „Tak, widzę pulpit” po świeżym logowaniu                      | Nie jest to jeszcze odbiór wszystkich funkcji telefonu ani trwałości po ponownym logowaniu            |
+| Produkcyjne uwierzytelnione HTTP          | **PASS pełnego przepływu:** 36 żądań HTTPS z AI, próba 2 `38787061192`                             | Próbka produkcyjnego AI działa na Free; dokładny CPU niezmierzony                                     |
+| Fizyczny Android, PWA i drugie urządzenie | **Niezweryfikowane**                                                                               | Wymagają osobnego odbioru                                                                             |
+
+Liczby w tabeli dotyczą wskazanych, faktycznie wykonanych przebiegów. Nie sumujemy testów celowanych do liczby pełnego zestawu. Pełny zestaw 128/128 dotyczy wskazanego commitu; poprzednie 120/120 dla `422ee2f` jest wynikiem historycznym. Poprzednie sukcesy pozostają dowodem historycznym.
 
 ## Metody i granice dowodów
 
-- Vitest: walidacja kontraktów, kalendarza, źródeł, reguł przeglądu, autoryzacji i budżetów.
-- Integracja: prawdziwy lokalny emulator D1 (Miniflare/workerd), pełne migracje SQL, rzeczywisty handler aplikacji Worker. Jedynie binding AI ma jawne odpowiedzi testowe. D1 nie jest mockiem.
-- Playwright: wykonane projekty Android Chromium 390 × 844 oraz desktop Chromium 1440 × 1000. Rzeczywisty frontend, parser PDF.js, API i lokalny D1; emulacja viewportu i dotyku, bez fizycznego telefonu.
-- Testy Vitest/E2E opisane w części lokalnej korzystają z jawnych odpowiedzi testowych AI. Oddzielny live test uruchomiony w GitHub Actions korzysta z rzeczywistych bindingów AI i D1; jego wynik i granice dowodów opisano na końcu raportu.
+- Vitest sprawdza kontrakty, źródła, daty, autoryzację, limity i zachowanie błędów.
+- Integracja korzysta z rzeczywistego lokalnego D1 w Miniflare/workerd i handlera aplikacji. Jedynie binding AI ma kontrolowane odpowiedzi testowe. Wyniki tych testów nie mierzą jakości modelu.
+- Playwright używa Chromium: Android 390 × 844 i desktop 1440 × 1000. Produkcyjny build jest serwowany przez lokalny Worker na porcie 8899. Wydzielone D1 w `.wrangler/e2e/` jest odtwarzane bez resetowania standardowej bazy deweloperskiej.
+- Oddzielny live test uruchamia ten sam handler na loopback z prawdziwymi zdalnymi bindingami AI i D1. Nie obejmuje produkcyjnego CPU, produkcyjnego HTTP ani OAuth.
+- Wykonany test produkcyjny wywołuje rzeczywiste HTTPS z krótkotrwałą sesją istniejącego właściciela. Administracyjne wydanie tej sesji nie potwierdza OAuth.
 
-## Stan weryfikacji
+Lokalny przebieg z mockiem zapisuje operacyjne metadane do `artifacts/qa-workflow-mock.json`; plik jest jawnie oznaczony. Zrzuty E2E powstają w `test-results/`. Pobieranie Chromium z CDN było zablokowane przez politykę sieci; lokalnie wykorzystano dostępną przeglądarkę systemową. GitHub CI instalował przeglądarkę Playwright niezależnie.
 
-Ostatni pełny przebieg QA: 15.10.2026, 12:44 UTC.
+## Najnowszy rzeczywisty przebieg z katalogiem źródeł
 
-| Weryfikacja                         | Rzeczywisty wynik                                                               |
-| ----------------------------------- | ------------------------------------------------------------------------------- |
-| `npm test`                          | **56/56 PASS**, 10 plików, 20,13 s                                              |
-| `npm run lint`                      | **PASS**, brak błędów ESLint                                                    |
-| `npm run build`                     | **PASS**, TypeScript strict i kompilacja Vite                                   |
-| `npm run test:e2e`                  | **12/12 PASS**, 29,1 s, po 6 na mobile i desktop                                |
-| PDF.js 6                            | **PASS**, faktyczne odczytanie dwóch stron i dat 20.11.2026 / 22.01.2027        |
-| PWA                                 | **PASS**, manifest, ikony, rejestracja SW, brak `/api/` w cache                 |
-| Układ                               | **PASS**, brak poziomego przewijania na wszystkich 7 ekranach w obu viewportach |
-| Rzeczywisty Workers AI / zdalny D1  | **NIE WYKONANO** — brak autoryzacji usług                                       |
-| Fizyczny Android / logowanie GitHub | **NIE WYKONANO** — wymaga wdrożenia i konfiguracji OAuth                        |
+[Przebieg 38786468483](https://github.com/recytator/student-os/actions/runs/38786468483), zadanie AI `116600079868`, commit `422ee2f`: **SUCCESS**, cztery role i cztery wywołania bez retry, **68,663 s**. Wszystkie obowiązki: TP 5, FP 0, FN 0; pełne daty: TP 4, FP 0, FN 0. W obu pomiarach precision, recall i F1 = 1 według dopasowania daty, strony i cytatu.
 
-Dodatkowo cały GitHub Actions CI zakończył się **success** dla commitu `7c96aa1fd3d0c343b3e396ab41afef89ada8c5e0`: [zweryfikowany przebieg 38737400553](https://github.com/recytator/student-os/actions/runs/38737400553). Na runnerze GitHub przeszły `npm ci`, lint, formatowanie, testy, build, Wrangler dry-run oraz E2E z przeglądarką zainstalowaną przez Playwright. To nadal CI, nie wdrożenie Cloudflare.
+Planner zaproponował 6 bloków, po przeglądzie pozostały 4 i wszystkie 4 zapisano. Bezpośredni odczyt D1 potwierdził **4 zadania i 8 wydarzeń: 4 terminy oraz 4 bloki nauki**, 1 zatwierdzony wynik i stan `committed` po odświeżeniu. Cleanup potwierdzono. Dowód: [live-references.json](evidence/2026-10-15-live-references.json).
 
-Późniejszy przebieg CI dla commitu `ac018dd` nie przeszedł: [38737776503](https://github.com/recytator/student-os/actions/runs/38737776503), job `116431362155`. Test rozdzielenia budżetów odczytu i zapisu przekroczył domyślne 5000 ms podczas sekwencji 65 GET, 60 POST, dodatkowego POST ponad limit i końcowego GET. Nie zgłoszono nieudanej asercji. Dla tego jednego testu zwiększono limit do 30 000 ms, zachowując wszystkie żądania i sprawdzenia. Lokalna weryfikacja poprawki: `npm test -- tests/integration/api-consistency.test.ts` — **9/9 PASS**, 5,15 s (15.10.2026, 14:45 UTC); ESLint tego pliku — **PASS**. Ponowne potwierdzenie GitHub CI dla tej poprawki pozostaje do wykonania; wcześniejszy sukces CI powyżej dotyczy podanego wcześniejszego commitu.
+To pierwszy wskazany tutaj przebieg potwierdzający zapis rzeczywistych bloków nauki. Wcześniejsze przebiegi bez zaakceptowanego planu pozostają opisane oddzielnie. Test nadal używał handlera na loopback i zdalnych bindingów; nie jest pomiarem CPU wdrożonego Workera.
 
-Playwright korzystał z produkcyjnego buildu serwowanego przez lokalny Worker na porcie 8899. Oddzielny D1 w `.wrangler/e2e/` jest tworzony od nowa przy starcie testów. Nie resetuje standardowej bazy deweloperskiej. Wszystkie trzy migracje SQL zostały zastosowane.
+## Wcześniejszy rzeczywisty GLM — zestaw jednoznaczny
 
-Sprawdzono wizualnie rzeczywiste zrzuty ukończonych zadań na mobile i dokumentów na desktopie. Zrzuty QA powstają w `test-results/{android,desktop}-chromium-{tasks,documents}.png`. Root dodatkowo niezależnie przejrzał 21 widoków przy 320/390/1440 px; szczegóły w dokumentacji procesu.
+[Przebieg 38783763164](https://github.com/recytator/student-os/actions/runs/38783763164), zadanie `116590775923`, commit `28cd975`. Model: `@cf/zai-org/glm-4.7-flash`, z wyłączonym domyślnym thinking i zachowanym budżetem odpowiedzi.
 
-`npm test` zapisuje rzeczywiste metadane demonstracyjnego przebiegu orkiestratora do `artifacts/qa-workflow-mock.json`. Nagłówek pliku jednoznacznie oznacza mock AI. Czasy i checkpointy pochodzą z faktycznego lokalnego wykonania; odpowiedzi i liczniki tokenów są kontrolowanymi danymi testowymi.
+- Cztery role ukończone w czterech wywołaniach, bez retry; całość **83,591 s**.
+- Wydobyto **4 z 4 odrębnych pełnych dat**; precision i recall zbioru dat = 1. Jedna dodatkowa propozycja wymagała potwierdzenia.
+- Bezpośredni odczyt zdalnego D1: **4 zadania, 4 wydarzenia, 4 ukończone kroki i 1 zatwierdzony wynik**. Odczyt po odświeżeniu zachował `committed`.
+- W tym przebiegu nie zapisano bloków nauki; cztery wydarzenia są terminami, a nie zaakceptowanym planem przygotowań.
+- Izolowany użytkownik fixture i jego dane zostały usunięte po kontroli. Dowód pozostał w [live-exact.json](evidence/2026-10-15-live-exact.json).
 
-## Zakres testów integracyjnych
+Ta metryka mierzy zbiór odrębnych dat. Nie jest pełną oceną semantycznej zgodności tytułów, źródeł ani jakości modelu na innych dokumentach.
 
-1. Izolacja rekordów użytkowników zarówno w API, jak i triggerach D1.
-2. Wycofanie całego batch D1 po naruszeniu ograniczenia integralności.
-3. CSRF, odmowa anonimowego dostępu, brak zdalnego obejścia przez DEV_AUTH.
-4. Import dokumentu, serwerowe przeliczanie skrótu i deduplikacja treści mimo zmienionej nazwy/pliku hash dostarczonego przez klienta.
-5. Cztery odrębne etapy agentów, checkpoint po każdym żądaniu i wznowienie przez ponowny odczyt D1.
-6. Prawdziwe operacyjne logi etapów: czas, stan, schemat wyniku, przekazane tokeny z demonstracyjnego bindingu AI. Dane nie opisują rzeczywistego zużycia Cloudflare.
-7. Brak zadań przed zatwierdzeniem, atomowe zatwierdzenie i idempotencja ponownego kliknięcia.
-8. Nieprawidłowy JSON, fałszywy cytat i niepełny rok: odrzucenie lub wymagane potwierdzenie.
-9. Jeden retry, limity dzienne, limit dostawcy i dalsza dostępność ręcznych funkcji po błędzie AI.
-10. Blokada współbieżnego kroku orkiestratora; duże zatwierdzenie bez przekroczenia limitu parametrów SQL.
-11. Kaskadowe usuwanie dokumentów, powiązanych wyników i zatwierdzonych pochodnych.
+## Rzeczywisty GLM — zestaw niepełny i konfliktowy
 
-## Dokumenty i jakość ekstrakcji
+[Przebieg 38784929126](https://github.com/recytator/student-os/actions/runs/38784929126), zadanie `116594365113`, commit `e5d37ba`. Cztery role, cztery wywołania, **47,451 s**.
 
-Referencje znajdują się w `tests/fixtures/`. Dwa PDF-y po dwie strony zawierają pełne daty oraz przypadki niepełne, powtórzenia, konflikty i prompt injection. Pliki JSON zawierają ręcznie przygotowany zbiór referencyjny. Osobny PDF bez tekstu weryfikuje jednoznaczny komunikat OCR.
+| Miara dopasowania daty, strony i cytatu | TP  | FP  | FN  | Precision | Recall | F1      |
+| --------------------------------------- | --- | --- | --- | --------- | ------ | ------- |
+| Obowiązki z pełną datą                  | 2   | 0   | 0   | 1         | 1      | 1       |
+| Wszystkie obowiązki, także bez daty     | 3   | 0   | 1   | 1         | 0,75   | ≈ 0,857 |
 
-Nie zmierzono trafności rzeczywistego LLM: dostęp do Cloudflare Workers AI nie został jeszcze potwierdzony. Testy z odpowiedziami demonstracyjnymi potwierdzają logikę przepływu, nie zdolność modelu do ekstrakcji.
+Nie dopisano roku do egzaminu. Instrukcję z dokumentu próbującą utworzyć termin `01.01.2099` zignorowano. Planner zwrócił 2 bloki, ale po końcowych filtrach pozostało 0; nie jest to sukces jakości planowania. Zatwierdzenie konfliktowych danych świadomie pominięto. D1 wykazało 0 zadań i 0 wydarzeń; cleanup potwierdzono. Dowód: [live-ambiguous.json](evidence/2026-10-15-live-ambiguous.json).
 
-Po rzeczywistej analizie należy pobrać JSON z `/api/runs/:id` i wykonać:
+Metoda dopasowuje dokładną datę, stronę i nakładający się znormalizowany cytat o długości przynajmniej 12 znaków. Nie ustala samodzielnie semantycznej tożsamości zadania. Dwa obowiązki mogą mieć tę samą datę, dlatego tej tabeli nie wolno mylić z liczbą odrębnych dat.
 
-```bash
-node tests/evaluate-extraction.mjs tests/fixtures/syllabus-exact.json run-result.json
-node tests/evaluate-extraction.mjs tests/fixtures/syllabus-ambiguous.json ambiguous-run-result.json
-```
+## Nieudane rzeczywiste próby i poprawki
 
-Skrypt raportuje precision, recall i F1. Poprawne dopasowanie wymaga daty oraz strony i cytatu. Duplikaty zwiększają false positives. Brakujące daty nie mogą zostać zastąpione zgadywanym rokiem.
+- Pierwszy live test w [38782990131](https://github.com/recytator/student-os/actions/runs/38782990131) nie ukończył DocumentAgent po dwóch rezerwacjach; niczego nie zatwierdzono. Cleanup potwierdzono. Publikacja w osobnym zadaniu tego samego przebiegu zakończyła się sukcesem.
+- Próby `38784110083` i `38785341330` ujawniły niedosłowne cytaty lub błędne identyfikatory ReviewAgent. Zachowano odmowę zatwierdzenia. Nie raportujemy 100% powtarzalności na podstawie dwóch udanych przypadków.
+- GLM otrzymał obsługiwane `chat_template_kwargs.enable_thinking=false`; nie podniesiono budżetu 1500 tokenów.
+- Backend dodał zachowawcze uzgadnianie identyfikatorów: nieznane, powtórzone, sprzeczne lub pominięte pozycje nie są automatycznie akceptowane. Pierwotny wynik modelu i metadane uzgodnienia pozostają oddzielne.
+- Najnowsza poprawka źródeł pozwala modelowi wskazać `{ref_id}` z dosłownego katalogu. Serwer odtwarza stronę i cytat; istniejąca walidacja pełnych źródeł pozostaje. Poprawkę potwierdził pełny lokalny zestaw 120/120 oraz osobny nowszy przebieg live `38786468483`; wcześniejsze wyniki nadal przypisujemy ich własnym commitom.
 
-## Powtarzalne uruchomienie
+## Pełny odbiór produkcyjnego HTTPS — AI i plan
+
+[Przebieg 38787061192, próba 2](https://github.com/recytator/student-os/actions/runs/38787061192/attempts/2), zadanie `116604733105`: **PASS**, 36 rzeczywistych żądań HTTPS. Harness `fd04ff0` sprawdzał wdrożony Worker `5b0d01c`. CRUD, świeży odczyt, ICS/JSON, anonimowe 401 i wylogowanie sesji testowej przeszły.
+
+Rzeczywisty GLM ukończył DocumentAgent, DeadlineAgent, PlannerAgent i ReviewAgent. Pierwsza próba DeadlineAgent nie przeszła; ograniczony retry zakończył się poprawnie. Cały run zużył **5 rezerwacji i jeden retry**. Pełne daty ze zgodną stroną i cytatem: **4/4, precision = recall = 1**. Ten pomiar nie ocenia semantyki tytułów ani obowiązków bez daty.
+
+Zatwierdzenie i świeży odczyt potwierdziły **4 zadania i 8 wydarzeń: 4 terminy oraz 4 bloki nauki**. Wszystkie oznaczone rekordy i wyłącznie tymczasową sesję QA usunięto. Zachowano rzeczywiste `ai_usage`: przed testem 2 analizy / 5 wywołań, po teście 3 analizy / 10 wywołań, przy limitach 4/24. Jedna pozostała analiza dotyczy odczytu z **18:45:12,661 UTC, 15.10.2026**, nie bieżącej gwarancji.
+
+Dowód zawiera bezpieczne metadane, rzeczywiste kroki oraz tokeny wejścia/wyjścia zwrócone dla ukończonych odpowiedzi: [production-ai.json](evidence/2026-10-15-production-ai.json). Brak tokenów nieudanej próby nie oznacza zerowego zużycia. Nie zapisano prywatnej treści właściciela, cookie, sekretów ani ukrytego rozumowania.
+
+To potwierdzenie działania przetestowanego przepływu AI w produkcyjnym Workers Free, a nie tylko zdalnych bindingów na loopback. **Dokładnego CPU w ms nie zmierzono** i wynik nie gwarantuje obsługi każdego dużego PDF w limicie CPU. Sesja QA nie jest dowodem OAuth; rzeczywiste logowanie właściciela odebrano osobno.
+
+## Pierwszy odbiór produkcyjnego HTTP — CRUD
+
+[Przebieg 38787061192](https://github.com/recytator/student-os/actions/runs/38787061192), zadanie `116601663500`, commit `fd04ff0`: **`passed_crud_ai_skipped`**. Wykonano 19 rzeczywistych żądań HTTPS do wdrożonego Workera. Potwierdzono tożsamość istniejącego właściciela, anonimowe 401, utworzenie przedmiotu, zadania, zajęć i wydarzenia, ukończenie zadania, odczyt po odświeżeniu, eksport ICS/JSON oraz unieważnienie tymczasowej sesji po wylogowaniu. Własne rekordy i sesję testową usunięto. Dowód: [production-crud.json](evidence/2026-10-15-production-crud.json).
+
+AI **nie zostało wywołane**: przy ówczesnym limicie 2 analiz dziennie właściciel miał już 2 rezerwacje analiz i 5 wywołań. Test poprawnie zwrócił `skipped_owner_daily_budget`, z 0 własnych wywołań, bez zerowania lub zwrotu `ai_usage`. To sukces produkcyjnego CRUD, nie pełnego przepływu AI. Liczby dotyczą chwili testu i nie opisują bieżącego pozostałego budżetu.
+
+Żądania przechodziły przez rzeczywisty Worker i D1, więc konkretny przetestowany CRUD działał w produkcji. Dokładnego CPU nie zmierzono; test ten nie potwierdza produkcyjnego wykonania AI. Tymczasowa sesja administracyjna nie jest dowodem OAuth, które właściciel odebrał osobno.
+
+## Wdrożenie i OAuth
+
+Zdalne migracje początkowo ujawniły błąd transportu SQL `7500 / incomplete input`; zapis triggerów dostosowano i sprawdzono testami naruszeń własności. [38782784943](https://github.com/recytator/student-os/actions/runs/38782784943) zastosował wszystkie trzy migracje i opublikował Worker. Natychmiastowy health 404 spowodował błąd smoke; dodano ograniczone oczekiwanie na gotowość trasy.
+
+[38782990131](https://github.com/recytator/student-os/actions/runs/38782990131), zadanie `116587705205`, potwierdził health i stronę HTTP 200 oraz bootstrap/tasks HTTP 401. Późniejszy deploy w [38785341330](https://github.com/recytator/student-os/actions/runs/38785341330), zadanie `116595770511`, również zakończył się sukcesem. Workers Free został potwierdzony przez właściciela; skrypty nie zmieniały planu ani rozliczeń.
+
+Sekrety OAuth przekazano bezpiecznie do Workera. Pierwsza próba właściciela zwróciła GitHub 404: przekierowanie zawierało `%0A` na końcu Client ID. Poprawka `d54f502` usuwa otaczające białe znaki z obu wartości przed zapisem. Po wdrożeniu użytkownik potwierdził świeże logowanie i pulpit. Pole **Redirect URIs** jest poprawnym polem callbacku w jego UI; nie jest potrzebna nowa rejestracja aplikacji.
+
+## Historia odtwarzalności CI
+
+Pełne CI, wraz z E2E, przeszło m.in. w przebiegach [38737400553](https://github.com/recytator/student-os/actions/runs/38737400553), [38754614213](https://github.com/recytator/student-os/actions/runs/38754614213) i [38782987046](https://github.com/recytator/student-os/actions/runs/38782987046). Dotyczy to ich konkretnych commitów, nie automatycznie obecnego workspace.
+
+Dwa rozbudowane testy integracyjne przekroczyły wcześniejszy limit 5000 ms na runnerze bez błędu asercji. Limit dla tych scenariuszy zwiększono do 30 000 ms, zachowując wszystkie operacje i asercje. Zwiększenie limitu testu nie zmienia budżetu CPU produkcyjnego Workera.
+
+## Powtarzalne uruchomienie i dalszy odbiór
 
 ```bash
 npm ci
 node tests/fixtures/generate.mjs
 npm test
 npm run lint
+npm run format:check
 npm run build
-npx playwright install --with-deps chromium
 npm run test:e2e
 ```
 
-Konfiguracja Playwright sama kompiluje aplikację, odtwarza wydzielony testowy D1, stosuje lokalne migracje i uruchamia Worker z produkcyjnymi statycznymi zasobami oraz DEV_AUTH wyłącznie na localhost (port 8899). Nie wymaga produkcyjnego sekretu. Jeśli środowisko ma `/usr/bin/chromium`, korzysta z tej przeglądarki. Na tym środowisku pobranie Playwright Chromium z cdn.playwright.dev zostało odrzucone przez politykę sieci (403 Domain forbidden); dostępna jest systemowa przeglądarka Chromium.
+Ocena rzeczywistego eksportu:
 
-## Błędy wykryte podczas pracy
+```bash
+node tests/evaluate-extraction.mjs tests/fixtures/syllabus-exact.json run-result.json
+node tests/evaluate-extraction.mjs tests/fixtures/syllabus-ambiguous.json ambiguous-run-result.json
+```
 
-- Niezgodność `users.avatar_url` z autoryzacją przy wartości null: poprawiona przez Backend Agenta przed testami runtime.
-- Nieprawidłowe daty i offset +25:00 przechodzące część walidacji bibliotecznej: dodano niezależną kontrolę kalendarza i `Date.parse`.
-- Data dopasowana jako podciąg dłuższej liczby i stały letni offset: poprawione w walidatorze agentów.
-- Obejście autoryzacji deweloperskiej poza localhost: testy potwierdzają odmowę dostępu.
-- Wylogowanie przez GET i błędne pole stanu logu: poprawione przez Frontend Agenta.
-- Nieobsługiwany compatibility_date względem binarnego workerd: przyjęto obsługiwaną datę 06.08.2026.
-- Zmiana API PDF.js 6 (`isEvalSupported`) i błędy parsera CSS: poprawione; build i testy rzeczywistego parsera PDF przechodzą.
-- Niepowiązany import PDF z uruchomieniem workflow: poprawiony — import tworzy checkpoint, nie wywołuje automatycznie modelu.
-- Brak nazwy dostępności mobilnego szybkiego dodawania: dodano `aria-label`; test utworzenia zadania przechodzi na mobile.
-- CSRF odrzucający legalny lokalny proxy Vite: dodano ograniczoną obsługę lokalnego środowiska deweloperskiego; reguły produkcyjne pozostają rygorystyczne.
-- Grupowy zapis dużej liczby propozycji przekraczał ograniczenia SQL: poprawiono sposób grupowania; testy 40 zadań oraz 100 bloków nauki przechodzą w rzeczywistym lokalnym D1.
+Do wykonania: odbiór na fizycznym Androidzie, instalacja PWA, dane po ponownym logowaniu i drugie urządzenie. Dokładnych neurons ani produkcyjnego CPU nie odczytano. Przejście testu funkcjonalnego nie jest pomiarem CPU.
 
-## Pozostałe wymagane testy produkcyjne
+## Wdrożenie limitu 4 analiz
 
-Po konfiguracji Cloudflare i GitHub OAuth: logowanie z telefonu, rzeczywisty AI binding, cztery role z rzeczywistymi odpowiedziami, dokładne zużycie dostawcy jeśli udostępnione, trwałość danych po ponownym logowaniu, migracje zdalnego D1, instalacja PWA na Androidzie i test synchronizacji między urządzeniami. Tych wyników nie można potwierdzić na podstawie testów lokalnych.
-
-Po poprawce limitu czasu pełny [CI dla b7683f5](https://github.com/recytator/student-os/actions/runs/38754614213) zakończył się `completed / success`, łącznie z testami oraz E2E. Kontrola [gotowości wdrożenia](https://github.com/recytator/student-os/actions/runs/38754614301) działa poprawnie, ale jej raport ma status `blocked`: oba sekrety Cloudflare i oba sekrety OAuth są nieobecne w GitHub Actions. Właściciel jest poprawnie określony automatycznie. To wynik sprawdzenia konfiguracji, nie wdrożenie.
-
-## Weryfikacja po podłączeniu Cloudflare — 15.10.2026
-
-- Konto Workers Free potwierdzone przez właściciela; poświadczenia odczytywane wyłącznie jako sekrety Actions. Skrypty nie zmieniały planu ani rozliczeń.
-- Pierwsza migracja zdalna zwróciła SQLite7500/incompleteinput. Równoważny zapis triggerów SELECT RAISE WHERE oraz usunięcie średników z komentarzy rozwiązały problem transportu. Dodano21testów, w tym20 naruszeń własności. [Run38782784943](https://github.com/recytator/student-os/actions/runs/38782784943) potwierdził zastosowanie0001/0002/0003 i publikację. Natychmiastowy health404 spowodował niepowodzenie smoke; dodano ograniczone oczekiwanie na gotowość trasy.
-- [Run38782990131](https://github.com/recytator/student-os/actions/runs/38782990131), deployjob116587705205: **SUCCESS**; https://studentos.recytator.workers.dev odpowiada HTTP200, health200, bootstrap i tasks401. Wersja4796abc1-e23c-48c0-9f84-e5e1a0244ed4.
-- [PełnyCI84e06cf](https://github.com/recytator/student-os/actions/runs/38782987046): SUCCESS, wraz z E2E.
-- LiveAIjob116588185483 tego samego deployrun: **FAIL**. Lokalny handler z prawdziwym zdalnym D1 i AI wykonał dwie rezerwacje DocumentAgent, nie ukończył roli, nie zapisał zaakceptowanych zadań. Czas98,922s. Cleanup osobnego testowego użytkownika i jego danych potwierdzony. [Artefakt11995259966](https://github.com/recytator/student-os/actions/runs/38782990131/artifacts/11995259966) zawiera raport i operacyjne kroki. Nie ma podstaw do wyliczenia jakości ekstrakcji ani deklaracji czterech ukończonych agentów.
-- Po udokumentowanym wyłączeniu domyślnego thinking GLM oraz dodaniu diagnostyk: lokalnie **83/83PASS**,12plików,23,24s; ESLint, TypeScript, Vitebuild i PrettierPASS. Dwa nowe testy sprawdzają właściwą konfigurację GLM i niezmienioną Gemma. Ponowny [deploy/test28cd975](https://github.com/recytator/student-os/actions/runs/38783763164) wymaga odczytania wyniku.
-
-Bieżące dowody zastępują wcześniejsze stwierdzenia o braku dostępu Cloudflare i niewykonanych migracjach. OAuth oraz fizyczny Android nadal wymagają konfiguracji/odbioru. Test lokalnego handlera ze zdalnymi bindingami nie dowodzi zmieszczenia żądań w produkcyjnym limicieCPU Workers Free.
+Pełny lokalny zestaw po zmianie: **128/128 PASS**, 15 plików, 24,18 s; lint i build PASS. Commit `5b0d01c` wdrożył limit 4 analiz dziennie, zachowując 24 wywołania i wcześniejsze rezerwacje. [Przebieg 38787614257](https://github.com/recytator/student-os/actions/runs/38787614257), zadanie deploy `116603572484`: **SUCCESS**. Druga próba produkcyjnego odbioru w `38787061192` przeszła z rzeczywistym AI. [CI 38787611794](https://github.com/recytator/student-os/actions/runs/38787611794) dla `5b0d01c` również zakończyło się sukcesem, obejmując 128 testów unit/integration oraz 12 E2E. Dostępny budżet sprawdzamy świeżym odczytem serwera.

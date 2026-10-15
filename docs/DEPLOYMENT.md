@@ -1,6 +1,8 @@
 # Wdrożenie StudentOS z telefonu
 
-Stan na 15.10.2026: **wdrożone** pod https://studentos.recytator.workers.dev. [Deploy38782990131](https://github.com/recytator/student-os/actions/runs/38782990131): job deploy SUCCESS, wszystkie trzy migracje D1 zastosowane, strona HTTP200 oraz prywatne API401 sprawdzone. Workers Free potwierdzony przez właściciela. **Logowanie oczekuje rejestracji GitHub OAuth i dwóch sekretów**; wdrożenie nie oznacza jeszcze pełnego odbioru aplikacji. Instrukcja dotyczy istniejącego repozytorium https://github.com/recytator/student-os.
+Stan na **15.10.2026**: aplikacja jest wdrożona pod https://studentos.recytator.workers.dev, a właściciel potwierdził udane logowanie i pulpit. Workers Free oraz trzy migracje D1 są potwierdzone. Najnowszą publikację potwierdził [przebieg 38787614257](https://github.com/recytator/student-os/actions/runs/38787614257), zadanie deploy `116603572484`, commit `5b0d01c`, wraz z limitem 4 analiz dziennie.
+
+Konto Cloudflare, sekrety i aplikacja OAuth są już skonfigurowane. **Nie trzeba ponownie wykonywać rejestracji.** Poniższe kroki pozostają instrukcją odtworzenia konfiguracji. Pełny przepływ CRUD/AI przez produkcyjne HTTPS przeszedł. Fizyczny telefon/PWA i dokładna telemetria CPU są odrębnymi kontrolami; bieżący stan zawiera [TEST_REPORT.md](TEST_REPORT.md).
 
 ## 1. Konto Workers Free
 
@@ -26,7 +28,7 @@ Nie uruchamiaj ręcznie `wrangler deploy` z nieuzupełnionym `wrangler.jsonc`: z
 
 1. Zapisz rzeczywisty adres z poprzedniego kroku.
 2. Otwórz https://github.com/settings/applications/new (na telefonie w razie potrzeby włącz „Wersja na komputer”).
-3. **Application name:** `StudentOS`. **Homepage URL:** rzeczywisty adres aplikacji. **Authorization callback URL:** ten sam adres z końcówką `/api/auth/callback`.
+3. **Application name:** `StudentOS`. **Homepage URL:** rzeczywisty adres aplikacji. **Authorization callback URL / Redirect URIs:** ten sam adres z końcówką `/api/auth/callback`.
 4. Zarejestruj aplikację. Dodaj **Client ID** jako GitHub Actions Secret `STUDENTOS_GITHUB_CLIENT_ID`.
 5. Wybierz **Generate a new client secret**. Zapisz go bezpośrednio jako Secret `STUDENTOS_GITHUB_CLIENT_SECRET`. Nie przesyłaj sekretu do czatu.
 6. Ponownie uruchom workflow wdrożenia. Sekrety zostaną przekazane do Worker Secrets przez stdin, nigdy w argumentach poleceń. Zalogować może się wyłącznie `GITHUB_OWNER_ID`.
@@ -56,3 +58,7 @@ Workflow **Check deployment access (no changes)** sprawdza w środowisku GitHub 
 ## Uruchomienie nadzorowane przez agenta
 
 Po jednoznacznym potwierdzeniu przez właściciela konta Workers Free i skonfigurowaniu sekretów można uruchomić ten sam workflow, publikując zweryfikowany commit na gałęzi `deploy/studentos`. Wyłącznie ta gałąź ma automatyczny trigger publikacji; zwykły push na `main` nie uruchamia wdrożenia. Ręczne `workflow_dispatch` nadal wymaga potwierdzenia Free. Gałąź wdrożeniowa nie zmienia prawdziwego planu konta i nie upoważnia do aktywowania Paid.
+
+## Usunięty błąd GitHub 404 podczas odbioru
+
+W przekierowaniu właściciela parametr client_id kończył się `%0A`, czyli skopiowanym znakiem nowej linii. To był konkretny błąd konfiguracji wartości, nie dowód braku aplikacji OAuth. Poprawka `d54f502` usuwa otaczające białe znaki z obu wartości przed wysłaniem przez stdin do Worker Secrets. W formularzu właściciela pole callback jest opisane jako **Redirect URIs**; ten opis jest poprawny. Po publikacji poprawki właściciel rozpoczął świeże logowanie i potwierdził: „Tak, widzę pulpit”. Starego URL GitHuba z `%0A` nie należy używać. Nie trzeba ponownie tworzyć aplikacji OAuth.

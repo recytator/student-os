@@ -48,10 +48,12 @@ Definicje promptów i walidatory znajdują się w `worker/agents.ts`; schematy w
 | PlannerAgent  | Obowiązki, dostępność i zajęte terminy                                        | Edytowalne szacunkowe bloki nauki                                 | Kolejność początku i końca, termin zadania, brak kolizji; szacunki zawsze oznaczone |
 | ReviewAgent   | Zweryfikowane cytaty, pierwsza struktura dokumentowa i wyniki pozostałych ról | Decyzje dla propozycji i problemy                                 | Osobny walidator deterministyczny nie ufa samemu `accepted` zwróconemu przez LLM    |
 
+DocumentAgent i DeadlineAgent otrzymują katalog dosłownych fragmentów zamiast duplikowanych stron tekstu. Wskazują `{ref_id}`, a serwer odtwarza dokładną stronę i cytat; nieznana referencja jest błędem. Publiczny kontrakt aplikacji nadal zawiera `{page, quote}`.
+
 Kontrakt wyjściowy zawiera wyniki i krótkie operacyjne uzasadnienia. Nie wymaga ani nie zapisuje ukrytego toku rozumowania. Źródła pozostają niezaufanymi danymi; prompt jawnie zabrania wykonywania instrukcji z PDF. To zmniejsza ryzyko prompt injection, lecz nie daje matematycznej gwarancji poprawności LLM. Dlatego wynik musi przejść schemat, kontrolę źródeł i zatwierdzenie człowieka.
 
 Daty niepełne pozostają puste i wymagają potwierdzenia. Rok akademicki nie uprawnia do dopisania roku, którego nie ma w materiale. Review może odrzucić wynik innego modelu. Niezależny walidator ma dostęp do pełnego tekstu; model ReviewAgent otrzymuje tylko wybrane cytaty, co ogranicza jego kontekst dla długiego dokumentu. Nie zapisujemy propozycji jako zadania, zanim użytkownik nie zatwierdzi wyniku.
 
 ## Obserwowalność i uczciwość demonstracji
 
-Log zawiera identyfikator uruchomienia, nazwę roli, czas, status, liczbę prób, model, operacyjne podsumowania oraz ustrukturyzowany wynik. `usage` prezentujemy jedynie, gdy dostawca rzeczywiście je zwrócił. Test z podstawionym bindingiem AI jest testem integracji, nie rzeczywistym wywołaniem modelu. Historia produkcyjnych uruchomień powstanie dopiero po autoryzacji Cloudflare i wykonaniu analizy.
+Log zawiera identyfikator uruchomienia, nazwę roli, czas, status, liczbę prób, model, operacyjne podsumowania oraz ustrukturyzowany wynik. `usage` prezentujemy jedynie, gdy dostawca rzeczywiście je zwrócił. Test z podstawionym bindingiem AI jest testem integracji, nie rzeczywistym wywołaniem modelu. Rzeczywiste przebiegi GLM ze zdalnym D1 zapisano w `docs/evidence/`. Izolowane dane fixture zostały posprzątane, więc nie muszą pozostać widoczne na prywatnym pulpicie. Test bindingów na loopback i odbiór produkcyjnego HTTP są rozdzielone w raporcie.

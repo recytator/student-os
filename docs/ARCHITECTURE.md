@@ -1,6 +1,6 @@
 # Architektura StudentOS
 
-Stan: architektura wersji 0.1, 15.10.2026. Dokument opisuje kontrakty i kod w repozytorium; nie stanowi potwierdzenia wdrożenia ani wykonania zdalnego modelu. Wyniki weryfikacji znajdują się w `TEST_REPORT.md`.
+Stan: architektura wersji 0.1, 15.10.2026. Dokument opisuje kontrakty i kod w repozytorium. Aplikacja jest wdrożona pod https://studentos.recytator.workers.dev; wykonanie rzeczywistego GLM i zdalne D1 mają odrębne dowody testowe. Wyniki weryfikacji znajdują się w `TEST_REPORT.md`.
 
 ## Granice systemu
 
@@ -90,7 +90,7 @@ Każdy etap zapisuje checkpoint i jest wywoływany osobnym żądaniem. Odśwież
 
 W tej wersji ReviewAgent może zlecić jeden powrót do PlannerAgent, jeśli pozostał budżet dwóch wywołań na poprawkę i ponowną weryfikację. Nie ma automatycznej pętli poprawiania ekstrakcji dat; problemy pozostają w raporcie i wymagają kontroli użytkownika.
 
-Każdy z czterech agentów ma własny prompt i schemat wejścia/wyjścia. Nie otrzymują narzędzia dowolnego SQL, sieci, plików ani zapisu zadań. Orkiestrator sam wykonuje dozwolone operacje. Odpowiedź modelu przechodzi walidację struktury oraz deterministyczną kontrolę źródeł i dat. ReviewAgent otrzymuje materiały do niezależnej kontroli; sama deklaracja modelu nie stanowi dowodu poprawności.
+Każdy z czterech agentów ma własny prompt i schemat wejścia/wyjścia. Nie otrzymują narzędzia dowolnego SQL, sieci, plików ani zapisu zadań. Orkiestrator sam wykonuje dozwolone operacje. DocumentAgent i DeadlineAgent wskazują referencje do katalogu dosłownych fragmentów; serwer odtwarza `{page, quote}` i ponownie sprawdza pełne źródło. Odpowiedź przechodzi walidację struktury oraz deterministyczną kontrolę źródeł i dat. Zachowawcze uzgodnienie ID ReviewAgent nie akceptuje nieznanych, pominiętych, powtórzonych lub sprzecznych propozycji. ReviewAgent otrzymuje materiały do niezależnej kontroli; sama deklaracja modelu nie stanowi dowodu poprawności.
 
 ## Bezpieczeństwo i koszty
 
@@ -102,4 +102,4 @@ Treść PDF jest niezaufanym materiałem źródłowym. Instrukcje w tekście nie
 
 ## Granice wdrożenia
 
-Repozytorium nie dostarcza konta Cloudflare, autoryzacji, bazy zdalnej ani aplikacji GitHub OAuth. Ich utworzenie wymaga działań właściciela. Binding `AI` i działanie konkretnego modelu trzeba sprawdzić na koncie docelowym. Lokalny test z kontrolowaną odpowiedzią nie potwierdza jakości zdalnego LLM. Dane testowe nie są produkcyjnymi danymi dashboardu.
+Cloudflare i OAuth są skonfigurowane; właściciel potwierdził udane logowanie. Rzeczywisty GLM oraz zapis w zdalnym D1 potwierdzają dowody w `docs/evidence/`. Test bindingów używał handlera na loopback, więc nie dowodzi całego przepływu przez produkcyjne HTTPS ani limitu CPU Workers Free. Po pierwszym teście CRUD druga próba wykonała 36 żądań HTTPS i potwierdziła rzeczywisty przepływ AI oraz zapis bloków nauki na Workers Free. Dokładnego CPU nie zmierzono; fizyczny Android/PWA i drugie urządzenie pozostają niezweryfikowane. Publiczne dane fixture po testach usunięto; nie udają historii właściciela.

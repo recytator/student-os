@@ -1,42 +1,32 @@
 # Backlog i bezpieczna kontynuacja
 
-Poniższa lista nie jest raportem ukończonych funkcji. Stan końcowych testów i wdrożenia należy odczytać z `TEST_REPORT.md`, `DEVELOPMENT_LOG.md` i README.
+Stan: **15.10.2026**, po wdrożeniu i produkcyjnym odbiorze rdzenia. Aplikacja: https://studentos.recytator.workers.dev. Dowody i granice testów: [TEST_REPORT.md](TEST_REPORT.md), [ACCEPTANCE.md](ACCEPTANCE.md). Kontynuację zaczynaj od [CONTINUATION.md](CONTINUATION.md); nie powtarzaj konfiguracji kont ani zakończonych testów bez potrzeby.
 
-## P0 — konieczne do prywatnego użycia
+## Wykonane
 
-- Zweryfikować migrację D1 lokalnie i na środowisku docelowym.
-- Uruchomić chronione CRUD-y przedmiotów, zadań, podzadań, wydarzeń, planu i preferencji.
-- Zweryfikować OAuth i ponowne logowanie na faktycznej domenie, kontrolę właściciela, CSRF i odrzucenie sesji obcego użytkownika.
-- Przetestować PDF.js na tekstowym PDF i jednoznaczne odrzucenie skanu.
-- Wykonać wszystkie cztery etapy na rzeczywistym bindingu Workers AI; zapisać logi i checkpointy w D1.
-- Sprawdzić niepełne daty, cytaty, duplikaty, błędny JSON modelu, konflikt zajęć i wyczerpanie limitu.
-- Sprawdzić korektę propozycji, atomowe zatwierdzanie i idempotencję ponownego zatwierdzenia.
-- Przetestować wznowienie po odświeżeniu i wyścig dwóch żądań tego samego etapu.
-- Wykonać build, lint, unit/integration oraz E2E Android/desktop z udokumentowanym wynikiem.
-- Wdrożyć dopiero po konfiguracji właściciela; nie używać produkcyjnego `DEV_AUTH`.
-- Przeprowadzić smoke test produkcyjny: logowanie → przedmiot → zajęcia → zadanie → PDF → AI → akceptacja → ponowne logowanie.
+- [x] Migracje D1 lokalnie i na Cloudflare, chronione CRUD i trwałość po świeżym odczycie API.
+- [x] GitHub OAuth właściciela: użytkownik potwierdził logowanie i pulpit; autoryzacja, CSRF i izolacja mają testy.
+- [x] PDF.js: rzeczywisty tekstowy PDF i komunikat wymagania OCR dla skanu w E2E.
+- [x] Cztery rzeczywiste role GLM, checkpointy, retry, źródła i zatwierdzenie przez produkcyjne HTTPS.
+- [x] Produkcyjny zapis 4 zadań, 4 terminów i 4 bloków nauki; sprawdzone eksporty ICS/JSON.
+- [x] Testy dat, duplikatów, złego JSON, limitów, wyścigów etapów i idempotencji zatwierdzenia.
+- [x] Pełne CI: 128 testów jednostkowych/integracyjnych oraz 12 E2E mobile/desktop.
+- [x] Prawdziwe logi, pomiary względem referencji, dokumentacja i materiały prezentacyjne.
 
-## P1 — jakość codziennego użycia
+## P1 — dalszy odbiór i jakość codziennego użycia
 
-- Zmierzyć ekstrakcję terminów względem zestawów referencyjnych; odróżnić testy deterministyczne od jakości rzeczywistego LLM.
-- Zweryfikować eksport JSON/ICS, poprawność polskich znaków, lokalny czas i zmianę czasu letniego.
-- Sprawdzić brak poziomego przepełnienia, obszary dotykowe, focus, stany loading/empty/error i klawiaturę ekranową.
-- Potwierdzić instalację PWA na Androidzie przez HTTPS i bezpieczną aktualizację zasobów.
-- Zweryfikować, że cache PWA nie przechowuje prywatnych odpowiedzi API.
-- Uzupełnić prezentację prawdziwymi logami dopiero po wykonaniu analizy na środowisku docelowym.
+- [ ] Fizyczny Android: instalacja i aktualizacja PWA, klawiatura, ręczna korekta propozycji oraz pełny scenariusz PDF.
+- [ ] Zachowanie danych po rzeczywistym wylogowaniu/ponownym logowaniu i synchronizacja z drugim urządzeniem.
+- [ ] Rozszerzenie ekstrakcji AI o dokładne godziny wydarzeń i konflikty tych godzin. Obecne terminy AI mają dokładność dnia; ręczny kalendarz i plan zajęć obsługują godziny.
+- [ ] Dalsze pomiary na rzeczywistych sylabusach. Historyczny zestaw konfliktowy miał recall obowiązków 0,75; najnowszy zestaw jednoznaczny 1. Nie utożsamiać tego z gwarancją jakości.
+- [ ] Pomiar dokładnego CPU i neurons, jeśli metryki dostawcy są dostępne, oraz ocena dużych PDF. Przetestowany produkcyjny przepływ AI przeszedł na Free; nie jest to dowód dla każdego rozmiaru dokumentu.
 
 ## P2 — rozwój po stabilizacji
 
 - OCR jako opcjonalny lokalny moduł z jawnymi limitami urządzenia.
-- Rozszerzony model dostępności: przerwy, dni wolne, wyjątki zajęć i dodatkowe strefy czasowe.
-- Import USOS/ICS i synchronizacja z zewnętrznym kalendarzem po świadomej autoryzacji.
-- Powiadomienia, inteligentne powtórki, import maili; każda integracja z minimalnymi uprawnieniami.
-- Kontrolowane zdalne wznowienie workflow bez otwartego klienta, jeśli dostępny bezpłatny mechanizm zapewni wymagane gwarancje.
+- Wyjątki dostępności, dni wolne i bardziej szczegółowe planowanie.
+- Import USOS/ICS i synchronizacja kalendarza po autoryzacji właściciela.
+- Powiadomienia, powtórki i import maili z minimalnymi uprawnieniami.
+- Wznowienie bez otwartego klienta wyłącznie przy dostępności gwarantowanego, bezpłatnego mechanizmu.
 
-## Punkt wznowienia
-
-1. Przeczytaj README, `TEST_REPORT.md`, `DEVELOPMENT_LOG.md` i pliki konfiguracji.
-2. Nie przenoś produkcyjnych sekretów do repozytorium ani do czatu.
-3. Uruchom `npm ci`, lokalne migracje i wymagane sprawdzenia.
-4. Sprawdź bieżące identyfikatory modeli i limity w dokumentacji dostawcy; nie opieraj się wyłącznie na danych historycznych.
-5. Kontynuuj pierwszą niespełnioną pozycję P0. Każdą blokadę dostępu udokumentuj wraz z dokładnym działaniem właściciela.
+Nie resetuj rzeczywistego zużycia AI. Aktualne limity to 4 analizy i 24 wywołania dziennie, 12 wywołań na run i jeden retry. Zachowaj migracje, własność danych oraz potwierdzanie propozycji przez użytkownika.

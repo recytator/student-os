@@ -43,10 +43,10 @@ Checkpoint jest punktem kontynuacji, nie gwarancją dokładnie jednego obciąże
 | Strona przy uploadzie            | 30 000 znaków                                                                             |
 | Bazowy fragment analizy          | 30 000 znaków, najwyżej 4 fragmenty                                                       |
 | Dane wejściowe pojedynczego LLM  | 64 000 znaków serializowanego JSON; to limit znaków, nie tokenów                          |
-| Odpowiedź modelu                 | `max_tokens: 1500`                                                                        |
+| Odpowiedź modelu                 | 1500 tokenów; GLM: `max_completion_tokens`, Gemma: `max_tokens`                           |
 | Uruchomienie                     | 12 wywołań modelu, w tym najwyżej 1 ponowienie po błędzie w całym run                     |
 | Poprawka z ReviewAgent           | Najwyżej 1 powrót do PlannerAgent, potem ReviewAgent; wymagany pozostały budżet 2 wywołań |
-| Użytkownik i dzień Europe/Warsaw | 2 nowe analizy, 24 wywołania AI                                                           |
+| Użytkownik i dzień Europe/Warsaw | 4 nowe analizy, 24 wywołania AI                                                           |
 | Konkurencja kroków               | Lease D1 na 5 minut; kolejny klient otrzymuje konflikt zamiast równoległego wywołania     |
 | Propozycje łącznie               | 40; nadmiar wymaga podziału dokumentu                                                     |
 
@@ -98,6 +98,12 @@ sequenceDiagram
 - Błędy limitu AI nie usuwają dokumentu ani zapisanych zadań. Zarządzanie przedmiotami i zadaniami nie wymaga dostępnego modelu.
 - Zatwierdzenie w UI nie pomija serwerowej walidacji właściciela i danych. Jeżeli użytkownik ręcznie doda datę niepotwierdzoną w cytacie, zadanie zapisuje `date_origin: user_confirmed` z ostrzeżeniem. Data nie staje się przez to faktem wydobytym z dokumentu.
 
+## Katalog źródeł i zachowawczy przegląd
+
+Przed wywołaniem DocumentAgent i DeadlineAgent serwer tworzy katalog dosłownych fragmentów z identyfikatorami. Transport zawiera `evidence_catalog` zamiast powielonego `pages`; model wybiera `{ref_id}`, a serwer odtwarza dokładne `{page, quote}`. Katalog zachowuje tekst i numery stron, dzieląc go według zdań/linii oraz limitu 800 znaków na wpis. Nieznane referencje są odrzucane. Dotychczasowy format cytatu nadal przechodzi walidację; nie ma zgody na dowolnie przepisany tekst.
+
+ReviewAgent może zwrócić niepełne lub błędne ID. Serwer zachowuje oryginalny wynik i osobne metadane uzgodnienia. Nieznane ID są pomijane, a pozycje pominięte, powtórzone lub sprzeczne nie uzyskują automatycznej akceptacji. Akceptację dodatkowo ogranicza niezależna kontrola źródeł i dat. Cache ma wersję v2. Log rozróżnia liczbę bloków zaproponowanych, zatrzymanych po filtrach i zatwierdzonych.
+
 ## Zmiana zatwierdzonego terminu
 
 Migracja `0003_task_calendar_links.sql` wiąże wygenerowane wydarzenia z zadaniem przez `task_id`. Edycja terminu zadania aktualizuje jego dzienne wydarzenie, usuwa poprzednie powiązane bloki nauki i oznacza `planning_status: needs_replanning`; nie wywołuje automatycznie modelu. Ręczna zmiana daty zachowuje źródła i ustawia pochodzenie `user_confirmed`. Usunięcie zadania usuwa powiązane wydarzenia przez klucz obcy. Aktualizacja zadania i kalendarza jest atomowa z kontrolą wersji `updated_at`.
@@ -110,7 +116,7 @@ Wiele wierszy zapisujemy w jednym parametryzowanym INSERT. Strony są grupowane 
 
 `agent_runs` opisuje całe wykonanie, a `agent_steps` poszczególne próby/etapy. Logi nie stanowią zapisu ukrytego rozumowania. Ich źródłem jest kod wokół rzeczywistego wywołania modelu i walidatora. W testach podstawiony binding jest jawnie oznaczoną zależnością testową.
 
-Podczas prezentacji należy otworzyć **Agent Activity** i wskazać rzeczywiste ID, model, statusy, czas oraz źródła wyników. Jeśli nie wykonano jeszcze analizy na prawdziwym Workers AI, należy pokazać brak takich logów i powiedzieć wprost, że produkcyjny test oczekuje na konfigurację. Nie ma obowiązku ilustrowania tego fikcyjnym przebiegiem.
+Podczas prezentacji należy otworzyć **Agent Activity** dla nowej analizy lub rzeczywisty dowód z `docs/evidence/`. Pokazujemy ID, model, statusy, czasy, źródła i wyniki filtrów. Dane fixture po testach usunięto; brak ich w prywatnym UI nie oznacza braku wykonanego testu. Wcześniejsze błędy walidacji również są częścią raportu, a nie historią zastąpioną późniejszym sukcesem.
 
 ## Kontynuacja po wdrożeniu
 
