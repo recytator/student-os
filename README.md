@@ -2,7 +2,7 @@
 
 Osobisty system studiów po polsku: React/PWA, Cloudflare Workers + D1 i czterej agenci Workers AI. Dane produkcyjne są prywatne; serwer dopuszcza wyłącznie skonfigurowane konto GitHub. Bez danych przykładowych na pulpicie i bez symulowanego AI w aplikacji.
 
-**Stan:** implementacja i lokalna weryfikacja; wdrożenie, logowanie produkcyjne i prawdziwy model wymagają konfiguracji konta Cloudflare oraz GitHub OAuth. Nie uznajemy ich za sprawdzone. Szczegółowe wyniki: [raport testów](docs/TEST_REPORT.md).
+**Stan:** [aplikacja wdrożona](https://studentos.recytator.workers.dev) na Workers Free, zdalne migracje D1 oraz dostępność i ochrona prywatnego API potwierdzone. Logowanie czeka na rejestrację GitHub OAuth. Test prawdziwego AI ma osobny wynik w [raporcie testów](docs/TEST_REPORT.md); testy lokalne nie zastępują odbioru produkcyjnego.
 
 ## Uruchomienie lokalne
 

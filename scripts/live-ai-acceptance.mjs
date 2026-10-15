@@ -365,6 +365,20 @@ export async function main() {
         calls: detail.run.calls,
         retries: detail.run.retries,
       });
+      console.log(
+        'STUDENTOS_LIVE_AI_CHECKPOINT=' +
+          JSON.stringify({
+            state: detail.run.state,
+            calls: detail.run.calls,
+            steps: detail.steps.map((step) => ({
+              agent: step.agent,
+              state: step.state,
+              duration_ms: step.duration_ms,
+              validation_json: step.validation_json,
+              error: step.error,
+            })),
+          }),
+      );
       // Each completed request must be independently recoverable from remote D1.
       const resumed = await api(`/runs/${runId}`);
       if (resumed.run.state !== detail.run.state || resumed.steps.length !== detail.steps.length)
@@ -424,6 +438,8 @@ export async function main() {
     clearTimeout(deadlineTimer);
     await stop();
     await cleanup();
+    report.completed_model_responses =
+      detail?.steps?.filter((step) => step.state === 'completed').length ?? 0;
     await rm(temporaryConfig, { force: true });
     report.finished_at = new Date().toISOString();
     report.duration_ms = Date.now() - began;

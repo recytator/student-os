@@ -1,6 +1,6 @@
 # Wdrożenie StudentOS z telefonu
 
-Stan: **niewdrożone w tej sesji**. Brak gotowych poświadczeń Cloudflare i aplikacji GitHub OAuth. Instrukcja dotyczy istniejącego repozytorium https://github.com/recytator/student-os.
+Stan na 15.10.2026: **wdrożone** pod https://studentos.recytator.workers.dev. [Deploy38782990131](https://github.com/recytator/student-os/actions/runs/38782990131): job deploy SUCCESS, wszystkie trzy migracje D1 zastosowane, strona HTTP200 oraz prywatne API401 sprawdzone. Workers Free potwierdzony przez właściciela. **Logowanie oczekuje rejestracji GitHub OAuth i dwóch sekretów**; wdrożenie nie oznacza jeszcze pełnego odbioru aplikacji. Instrukcja dotyczy istniejącego repozytorium https://github.com/recytator/student-os.
 
 ## 1. Konto Workers Free
 

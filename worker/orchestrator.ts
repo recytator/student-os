@@ -628,6 +628,9 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
               : error instanceof SyntaxError
                 ? 'json'
                 : 'provider_or_validation',
+          ...(error instanceof z.ZodError
+            ? { issues: error.issues.map((issue) => ({ path: issue.path, code: issue.code })) }
+            : {}),
         }),
         stepId,
         runId,

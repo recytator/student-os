@@ -79,6 +79,10 @@ export async function callAgent(
           { role: 'user', content },
         ],
         ...budget,
+        // GLM defaults to reasoning; reserve the bounded output for the required JSON result.
+        ...(model === '@cf/zai-org/glm-4.7-flash'
+          ? { chat_template_kwargs: { enable_thinking: false } }
+          : {}),
         temperature: 0.1,
       }),
       timeout,

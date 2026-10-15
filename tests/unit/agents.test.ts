@@ -177,6 +177,23 @@ describe('kontrakty wywołań AI — jawne odpowiedzi demonstracyjne (mock)', ()
     expect(JSON.parse(input.messages[1]!.content)).toEqual({ data: plannerInput });
     expect(input.max_tokens).toBeLessThanOrEqual(1500);
   });
+  it.each(['@cf/zai-org/glm-4.7-flash', '@cf/google/gemma-4-26b-a4b-it'])(
+    'ustawia wyłączenie thinking wyłącznie dla GLM, zachowując budżet 1500: %s',
+    async (model) => {
+      const run = vi.fn().mockResolvedValue({ response: '{"blocks":[],"warnings":[]}' });
+      await callAgent({ run }, model, 'PlannerAgent', plannerInput);
+      expect(run).toHaveBeenCalledTimes(1);
+      const input = run.mock.calls[0]![1] as Record<string, unknown>;
+      if (model === '@cf/zai-org/glm-4.7-flash') {
+        expect(input.chat_template_kwargs).toEqual({ enable_thinking: false });
+        expect(input.max_completion_tokens).toBe(1500);
+        expect(input).not.toHaveProperty('max_tokens');
+      } else {
+        expect(input).not.toHaveProperty('chat_template_kwargs');
+        expect(input.max_tokens).toBe(1500);
+      }
+    },
+  );
   it('odrzuca nieprawidłowy JSON i nie tworzy wyniku zastępczego', async () => {
     for (const response of ['nie jest JSON', '{"blocks": "invalid"}']) {
       const run = vi.fn().mockResolvedValue({ response });
