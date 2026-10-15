@@ -75,3 +75,9 @@ Późniejszy przebieg CI dla commitu `ac018dd` ujawnił timeout5000ms testu bud�
 Supervisor przygotował automatyczną, niemutującą kontrolę poświadczeń w GitHub Actions oraz domyślny wybór właściciela z identyfikatora inicjującego wdrożenie. Kontrola raportuje tylko obecność sekretów i stan dostępu, nigdy ich wartości. Wynik zdalny będzie podstawą określenia minimalnej interwencji potrzebnej do wdrożenia.
 
 Zdalna kontrola dostępu run `38754614301` zakończyła się poprawnie, zwracając `blocked`: token i Account ID Cloudflare oraz oba sekrety OAuth nie są skonfigurowane w GitHub Actions. Jest to sprawdzenie również po stronie CI, a nie wyłącznie brak lokalnych zmiennych. Pełny naprawiony CI run `38754614213` dla `b7683f5` zakończył się `success`. Wdrożenie pozostaje uzależnione od jednorazowego podłączenia poświadczeń, mimo zgody użytkownika na wykonanie wszystkich standardowych operacji.
+
+## Pierwsze wdrożenie — podłączenie konta
+
+Użytkownik potwierdził dodanie sekretów oraz konto Workers Free. Supervisor ponownie uruchomił kontrolę w GitHub Actions: oba sekrety Cloudflare są obecne, a odczyt subdomeny został zweryfikowany. Docelowy adres wynikający z konta to `https://studentos.recytator.workers.dev`; na tym etapie jest to adres przygotowywanego wdrożenia, nie dowód publikacji. Oba sekrety OAuth są nadal nieobecne.
+
+Dodano jawny trigger publikacji z gałęzi `deploy/studentos`, aby Supervisor mógł uruchomić już autoryzowane wdrożenie przez istniejący dostęp do repozytorium. Zwykłe aktualizacje `main` nie aktywują publikacji, a ręczny workflow zachowuje potwierdzenie Free.

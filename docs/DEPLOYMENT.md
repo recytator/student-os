@@ -52,3 +52,7 @@ Nie wykonuj destrukcyjnych migracji. Przed późniejszymi zmianami schematu wyek
 ## Automatyczna kontrola dostępu
 
 Workflow **Check deployment access (no changes)** sprawdza w środowisku GitHub Actions obecność wymaganych sekretów i możliwość odczytu subdomeny Cloudflare. Nie wypisuje ich wartości, nie tworzy zasobów i nie wywołuje AI. Status `blocked` oznacza brak konfiguracji lub dostępu, a `ready_for_initial_deployment` oznacza wyłącznie gotowość do rozpoczęcia wdrożenia, nie ukończoną publikację ani potwierdzenie planu Free.
+
+## Uruchomienie nadzorowane przez agenta
+
+Po jednoznacznym potwierdzeniu przez właściciela konta Workers Free i skonfigurowaniu sekretów można uruchomić ten sam workflow, publikując zweryfikowany commit na gałęzi `deploy/studentos`. Wyłącznie ta gałąź ma automatyczny trigger publikacji; zwykły push na `main` nie uruchamia wdrożenia. Ręczne `workflow_dispatch` nadal wymaga potwierdzenia Free. Gałąź wdrożeniowa nie zmienia prawdziwego planu konta i nie upoważnia do aktywowania Paid.

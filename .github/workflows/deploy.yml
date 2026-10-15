@@ -1,5 +1,7 @@
 name: Deploy StudentOS (Workers Free)
 on:
+  push:
+    branches: [deploy/studentos]
   workflow_dispatch:
     inputs:
       free_plan_confirmed:
@@ -14,7 +16,9 @@ concurrency:
   cancel-in-progress: false
 jobs:
   deploy:
-    if: inputs.free_plan_confirmed
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.free_plan_confirmed) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/deploy/studentos')
     runs-on: ubuntu-latest
     timeout-minutes: 15
     environment: production
