@@ -317,16 +317,21 @@ describe('Worker handler + rzeczywisty lokalny D1, AI jawnie demonstracyjne', ()
     expect(first.result).toBe(null);
     expect((await body(await request('/tasks'))).items).toEqual([]);
   });
-  it('limit dwóch analiz dziennie nie blokuje importowania dokumentów', async () => {
+  it('czwarta analiza jest dostępna, piąta blokowana bez ograniczania ręcznych funkcji', async () => {
     const documentId = await importDocument();
     await db
-      .prepare('INSERT INTO ai_usage(user_id,day,analyses) VALUES(?,?,2)')
+      .prepare('INSERT INTO ai_usage(user_id,day,analyses) VALUES(?,?,3)')
       .bind(
         'local-developer',
         new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Warsaw' }).format(new Date()),
       )
       .run();
-    const limited = await request(`/documents/${documentId}/analyze`, 'POST');
+    expect((await request(`/documents/${documentId}/analyze`, 'POST')).status).toBe(200);
+    const usage = await body(await request('/usage'));
+    expect(usage.usage.analyses).toBe(4);
+    expect(usage.limits).toEqual({ analyses: 4, calls: 24, max_calls_per_run: 12 });
+    const secondDocument = await importDocument(ambiguous);
+    const limited = await request(`/documents/${secondDocument}/analyze`, 'POST');
     expect(limited.status).toBe(429);
     expect((await body(limited)).error.code).toBe('AI_LIMIT');
     expect((await request(`/documents/${documentId}`)).status).toBe(200);

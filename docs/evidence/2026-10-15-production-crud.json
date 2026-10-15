@@ -1,0 +1,224 @@
+{
+  "provenance": {
+    "workflow_run": 38787061192,
+    "job": 116601663500,
+    "commit": "fd04ff0",
+    "url": "https://github.com/recytator/student-os/actions/runs/38787061192",
+    "note": "Actual production HTTPS requests. Short-lived QA session for real existing owner; user's separate browser login already confirmed. Model test skipped due to actual application quota; no quota reset or refund."
+  },
+  "report": {
+    "status": "passed_crud_ai_skipped",
+    "started_at": "2026-10-15T18:37:03.813Z",
+    "origin": "https://studentos.recytator.workers.dev",
+    "namespace": "PROD-QA-9c9de9a1-a6df-41e7-9d9a-a04333f13155",
+    "execution": "Actual HTTPS production Worker, static assets, D1 and optional Workers AI. A short-lived QA-issued session authenticates the existing real owner; this is NOT proof of a new OAuth login. Successful sampled requests exercised production execution limits; exact CPU time is not exposed or measured.",
+    "requests": [
+      {
+        "route": "/auth/me",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 507,
+        "response_bytes": 243,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/bootstrap",
+        "method": "GET",
+        "status": 401,
+        "duration_ms": 47,
+        "response_bytes": 90,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/subjects",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 840,
+        "response_bytes": 270,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 845,
+        "response_bytes": 419,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks/:test-id",
+        "method": "PATCH",
+        "status": 200,
+        "duration_ms": 984,
+        "response_bytes": 419,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks/:test-id",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 566,
+        "response_bytes": 419,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/schedules",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 834,
+        "response_bytes": 371,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/events",
+        "method": "POST",
+        "status": 201,
+        "duration_ms": 789,
+        "response_bytes": 452,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/bootstrap",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 670,
+        "response_bytes": 3432,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/export.ics",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 489,
+        "response_bytes": 1110,
+        "response_type": "text/calendar",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/export",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 966,
+        "response_bytes": 27227,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/usage",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 517,
+        "response_bytes": 311,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/events/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 641,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/tasks/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 663,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/schedules/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 641,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/subjects/:test-id",
+        "method": "DELETE",
+        "status": 200,
+        "duration_ms": 635,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/usage",
+        "method": "GET",
+        "status": 200,
+        "duration_ms": 475,
+        "response_bytes": 311,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/auth/logout",
+        "method": "POST",
+        "status": 200,
+        "duration_ms": 194,
+        "response_bytes": 11,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      },
+      {
+        "route": "/auth/me",
+        "method": "GET",
+        "status": 401,
+        "duration_ms": 305,
+        "response_bytes": 90,
+        "response_type": "application/json",
+        "cf_ray_present": true
+      }
+    ],
+    "checks": {
+      "production_authenticated_existing_owner": true,
+      "anonymous_private_api_blocked": true,
+      "crud_persisted_after_fresh_bootstrap": true,
+      "exports_ics_json_without_auth_secret_fields": true,
+      "temporary_session_logout_revoked": true
+    },
+    "ai": {
+      "requested": true,
+      "status": "skipped_owner_daily_budget",
+      "maximum_call_reservations": 5,
+      "call_reservations": 0,
+      "completed_agent_roles": [],
+      "metrics": null,
+      "usage_before": {
+        "analyses": 2,
+        "calls": 5,
+        "limit_analyses": 2,
+        "limit_calls": 24
+      },
+      "usage_after": {
+        "analyses": 2,
+        "calls": 5,
+        "limit_analyses": 2,
+        "limit_calls": 24
+      },
+      "remaining_daily_analyses": 0,
+      "note": "No AI usage reservations are refunded. Provider charges/neuron counts are not inferred from these counters."
+    },
+    "cleanup": {
+      "records": "all_exact_test_records_deleted",
+      "session": "only_exact_temporary_session_deleted"
+    },
+    "error": null,
+    "finished_at": "2026-10-15T18:37:20.084Z"
+  }
+}

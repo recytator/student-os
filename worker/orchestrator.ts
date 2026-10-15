@@ -148,6 +148,8 @@ class WorkflowValidationError extends Error {
   }
 }
 const MAX_CALLS = 12;
+const MAX_ANALYSES_PER_DAY = 4;
+const MAX_CALLS_PER_DAY = 24;
 const MODELS = ['@cf/zai-org/glm-4.7-flash', '@cf/google/gemma-4-26b-a4b-it'];
 interface DocumentRecord {
   id: string;
@@ -372,15 +374,15 @@ export async function startRun(env: Env, userId: string, documentId: string, for
   if (cached && !force) return { run: (await runDetail(env, userId, cached.id)).run, cached: true };
   const day = warsawDate(nowISO());
   const reservation = await env.DB.prepare(
-    `INSERT INTO ai_usage(user_id,day,analyses) VALUES (?,?,1) ON CONFLICT(user_id,day) DO UPDATE SET analyses=analyses+1 WHERE analyses<2 RETURNING analyses`,
+    `INSERT INTO ai_usage(user_id,day,analyses) VALUES (?,?,1) ON CONFLICT(user_id,day) DO UPDATE SET analyses=analyses+1 WHERE analyses<? RETURNING analyses`,
   )
-    .bind(userId, day)
+    .bind(userId, day, MAX_ANALYSES_PER_DAY)
     .first();
   if (!reservation)
     throw new HttpError(
       429,
       'AI_LIMIT',
-      'Wykorzystano limit 2 analiz dziennie. Dokument jest zapisany; zadania i kalendarz nadal działają.',
+      `Wykorzystano limit ${MAX_ANALYSES_PER_DAY} analiz dziennie. Dokument jest zapisany; zadania i kalendarz nadal działają.`,
     );
   const runId = id();
   try {
@@ -507,15 +509,15 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
   try {
     const day = warsawDate(nowISO());
     const quota = await env.DB.prepare(
-      'INSERT INTO ai_usage(user_id,day,calls) VALUES(?,?,1) ON CONFLICT(user_id,day) DO UPDATE SET calls=calls+1 WHERE calls<24 RETURNING calls',
+      'INSERT INTO ai_usage(user_id,day,calls) VALUES(?,?,1) ON CONFLICT(user_id,day) DO UPDATE SET calls=calls+1 WHERE calls<? RETURNING calls',
     )
-      .bind(userId, day)
+      .bind(userId, day, MAX_CALLS_PER_DAY)
       .first();
     if (!quota)
       throw new HttpError(
         429,
         'AI_LIMIT',
-        'Wykorzystano dzienny limit 24 wywołań AI. Zapisane dane są bezpieczne.',
+        `Wykorzystano dzienny limit ${MAX_CALLS_PER_DAY} wywołań AI. Zapisane dane są bezpieczne.`,
       );
     const [document, pages, records, preferences] = await Promise.all([
       ownedDocument(env, userId, run.document_id),
@@ -1049,7 +1051,11 @@ export async function handleOrchestrator(
       .first();
     return json({
       usage: usage ?? { analyses: 0, calls: 0, input_tokens: 0, output_tokens: 0 },
-      limits: { analyses: 2, calls: 24, max_calls_per_run: 12 },
+      limits: {
+        analyses: MAX_ANALYSES_PER_DAY,
+        calls: MAX_CALLS_PER_DAY,
+        max_calls_per_run: MAX_CALLS,
+      },
       note: 'Tokeny pochodzą z odpowiedzi dostawcy, jeśli je udostępnia. Brak dokładnego odczytu neuronów lub kosztu Cloudflare.',
     });
   }
