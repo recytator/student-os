@@ -268,7 +268,7 @@ describe('zadanie i kalendarz — transakcje na prawdziwym lokalnym D1', () => {
     } finally {
       clock.mockRestore();
     }
-  });
+  }, 30_000); // 127 sequential Worker/D1 requests also run on slower CI hosts.
   it('północ warszawska uwzględnia 23- i 25-godzinny dzień zmiany czasu', () => {
     for (const [date, hours] of [
       ['2026-03-29', 23],

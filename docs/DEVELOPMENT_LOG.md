@@ -65,3 +65,11 @@ Weryfikacja końcowa Supervisora: strict TypeScript + Vite build, ESLint, Pretti
 Testy przeglądarkowe ujawniły i doprowadziły do naprawy błędów rzeczywistego przepływu: CSRF przez proxy Vite, brak dostępnej nazwy mobilnego dodawania oraz import PDF bez utworzenia przebiegu analizy. Testy D1 ujawniły limit złożonych SELECT w pierwotnym grupowaniu INSERT; zastąpiono je grupowanym VALUES z kontrolą dzierżawy. Kolejna regresja wykryła przekazywanie technicznych kolumn D1 do ścisłych kontraktów agentów; jawne projekcje i minimalizacja kontekstu usunęły problem. Każda z tych informacji opisuje rzeczywiście zgłoszone i sprawdzone poprawki.
 
 Supervisor zapisał implementację na `main` repozytorium `recytator/student-os`, commit `7c96aa1`. Następnie odczytał status rzeczywistego GitHub Actions run `38737400553`: `completed / success`, z zaliczonymi testami i E2E. To potwierdzenie odtwarzalności poza workspace; publiczne wdrożenie wciąż wymaga konfiguracji Cloudflare i OAuth.
+
+## Kontynuacja — dostęp do wdrożenia i stabilizacja CI
+
+Po dodatkowej zgodzie użytkownika Supervisor ponownie sprawdził środowisko: konfiguracja nie zawierała gotowych poświadczeń Cloudflare, a `wrangler whoami` zwrócił brak autoryzacji. Otwarte i zalogowane karty przeglądarki użytkownika nie są udostępnione przez dostępne narzędzia sterowania. Zestaw dostępnych integracji nie zawiera Cloudflare ani sterowania przeglądarką; wyszukiwanie pluginu Cloudflare nie znalazło dopasowania.
+
+Późniejszy przebieg CI dla commitu `ac018dd` ujawnił timeout5000ms testu budżetów odczytu i zapisu, bez błędu asercji. QA zwiększył wyłącznie limit tego rzeczywistego testu do30000ms, zachowując ponad120 operacji; lokalna weryfikacja9/9 przeszła. Poprzedni udany przebieg CI pozostaje prawdziwym dowodem historycznym, ale nie zastępuje ponownego sprawdzenia poprawki.
+
+Supervisor przygotował automatyczną, niemutującą kontrolę poświadczeń w GitHub Actions oraz domyślny wybór właściciela z identyfikatora inicjującego wdrożenie. Kontrola raportuje tylko obecność sekretów i stan dostępu, nigdy ich wartości. Wynik zdalny będzie podstawą określenia minimalnej interwencji potrzebnej do wdrożenia.

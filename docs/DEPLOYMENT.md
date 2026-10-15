@@ -9,7 +9,7 @@ Stan: **niewdrożone w tej sesji**. Brak gotowych poświadczeń Cloudflare i apl
 3. W sekcji konta skopiuj **Account ID**; to identyfikator, nie hasło.
 4. Otwórz https://dash.cloudflare.com/profile/api-tokens → **Create Token** → **Custom token**. Ogranicz zasób do własnego konta. Nadaj wyłącznie uprawnienia potrzebne wdrożeniu: **Account / Workers Scripts / Edit**, **Account / D1 / Edit**, **Account / Workers AI / Read** i odczyt subdomeny Workers (w interfejsie może być oznaczony jako Workers Scripts Read zawarty w Edit). Nie wymagamy dostępu do stref DNS ani rozliczeń. Jeśli API odmówi konkretnego działania, sprawdź błąd i dodaj tylko wskazane niezbędne uprawnienie.
 5. Nie przesyłaj tokenu w czacie. Otwórz https://github.com/recytator/student-os/settings/secrets/actions → **New repository secret**. Zapisz token jako `CLOUDFLARE_API_TOKEN`, a Account ID jako `CLOUDFLARE_ACCOUNT_ID`.
-6. Otwórz https://github.com/recytator/student-os/settings/variables/actions → **New repository variable**. Dodaj `GITHUB_OWNER_ID` = `166433083`. Identyfikator zweryfikowano przez profil połączonego konta GitHub `recytator`; nie jest sekretem.
+6. Nie musisz ręcznie ustawiać właściciela: workflow przyjmuje identyfikator konta GitHub, które uruchamia wdrożenie. Dla tego projektu powinno to być konto `recytator` (`166433083`). Opcjonalna zmienna `GITHUB_OWNER_ID` w https://github.com/recytator/student-os/settings/variables/actions pozwala jawnie wskazać inne konto właściciela; nie jest sekretem.
 
 Jeżeli Cloudflare poprosi o kartę lub zmianę planu, przerwij tę operację. Kod nie potrzebuje usług premium. Nie obniżaj zabezpieczeń sesji ani allowlisty w celu uruchomienia aplikacji.
 
@@ -48,3 +48,7 @@ Konfiguracja serwera: `APP_ORIGIN` i `GITHUB_OWNER_ID` jako zmienne, `GITHUB_CLI
 Włączony Workers Free zatrzymuje operacje po wyczerpaniu limitów, bez automatycznej aktywacji Paid. To zależy od faktycznego planu konta, którego ten skrypt nie zmienia. Konto już korzystające z Paid może mieć inne zasady rozliczeń; takiego wdrożenia nie autoryzowano. Limity aplikacji nie zastępują sprawdzenia planu.
 
 Nie wykonuj destrukcyjnych migracji. Przed późniejszymi zmianami schematu wyeksportuj dane, zachowaj istniejące migracje i przetestuj nową migrację lokalnie. Rollback kodu: poprzednia wersja Worker w Cloudflare → Deployments; zgodność ze schematem sprawdź przed przywróceniem. Eksport JSON jest w ustawieniach aplikacji.
+
+## Automatyczna kontrola dostępu
+
+Workflow **Check deployment access (no changes)** sprawdza w środowisku GitHub Actions obecność wymaganych sekretów i możliwość odczytu subdomeny Cloudflare. Nie wypisuje ich wartości, nie tworzy zasobów i nie wywołuje AI. Status `blocked` oznacza brak konfiguracji lub dostępu, a `ready_for_initial_deployment` oznacza wyłącznie gotowość do rozpoczęcia wdrożenia, nie ukończoną publikację ani potwierdzenie planu Free.

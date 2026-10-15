@@ -1,0 +1,27 @@
+name: Check deployment access (no changes)
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - .github/workflows/deployment-readiness.yml
+      - scripts/check-deployment-readiness.mjs
+permissions:
+  contents: read
+jobs:
+  readiness:
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GITHUB_OWNER_ID: ${{ vars.GITHUB_OWNER_ID || github.actor_id }}
+      GITHUB_CLIENT_ID: ${{ secrets.STUDENTOS_GITHUB_CLIENT_ID }}
+      GITHUB_CLIENT_SECRET: ${{ secrets.STUDENTOS_GITHUB_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: node scripts/check-deployment-readiness.mjs

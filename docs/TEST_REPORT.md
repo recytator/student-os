@@ -27,6 +27,8 @@ Ostatni pełny przebieg QA: 15.10.2026, 12:44 UTC.
 
 Dodatkowo cały GitHub Actions CI zakończył się **success** dla commitu `7c96aa1fd3d0c343b3e396ab41afef89ada8c5e0`: [zweryfikowany przebieg 38737400553](https://github.com/recytator/student-os/actions/runs/38737400553). Na runnerze GitHub przeszły `npm ci`, lint, formatowanie, testy, build, Wrangler dry-run oraz E2E z przeglądarką zainstalowaną przez Playwright. To nadal CI, nie wdrożenie Cloudflare.
 
+Późniejszy przebieg CI dla commitu `ac018dd` nie przeszedł: [38737776503](https://github.com/recytator/student-os/actions/runs/38737776503), job `116431362155`. Test rozdzielenia budżetów odczytu i zapisu przekroczył domyślne 5000 ms podczas sekwencji 65 GET, 60 POST, dodatkowego POST ponad limit i końcowego GET. Nie zgłoszono nieudanej asercji. Dla tego jednego testu zwiększono limit do 30 000 ms, zachowując wszystkie żądania i sprawdzenia. Lokalna weryfikacja poprawki: `npm test -- tests/integration/api-consistency.test.ts` — **9/9 PASS**, 5,15 s (15.10.2026, 14:45 UTC); ESLint tego pliku — **PASS**. Ponowne potwierdzenie GitHub CI dla tej poprawki pozostaje do wykonania; wcześniejszy sukces CI powyżej dotyczy podanego wcześniejszego commitu.
+
 Playwright korzystał z produkcyjnego buildu serwowanego przez lokalny Worker na porcie 8899. Oddzielny D1 w `.wrangler/e2e/` jest tworzony od nowa przy starcie testów. Nie resetuje standardowej bazy deweloperskiej. Wszystkie trzy migracje SQL zostały zastosowane.
 
 Sprawdzono wizualnie rzeczywiste zrzuty ukończonych zadań na mobile i dokumentów na desktopie. Zrzuty QA powstają w `test-results/{android,desktop}-chromium-{tasks,documents}.png`. Root dodatkowo niezależnie przejrzał 21 widoków przy 320/390/1440 px; szczegóły w dokumentacji procesu.
