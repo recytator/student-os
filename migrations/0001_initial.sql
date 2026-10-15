@@ -1,4 +1,4 @@
--- StudentOS schema v1. UTC instants; date/time fields represent Europe/Warsaw.
+-- StudentOS schema v1. UTC instants, date/time fields represent Europe/Warsaw.
 PRAGMA foreign_keys = ON;
 
 CREATE TABLE users (
@@ -10,7 +10,7 @@ CREATE TABLE users (
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
 );
 CREATE TABLE sessions (
-  id TEXT PRIMARY KEY, -- SHA-256 of the opaque cookie; never the bearer token.
+  id TEXT PRIMARY KEY, -- SHA-256 of the opaque cookie, never the bearer token.
   user_id TEXT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
   expires_at INTEGER NOT NULL,
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ','now'))
@@ -190,48 +190,48 @@ CREATE TABLE ai_usage (
 
 -- Cross-user relations are rejected even if a caller guesses another record ID.
 CREATE TRIGGER tasks_owner_insert BEFORE INSERT ON tasks BEGIN
-  SELECT CASE WHEN NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
-  SELECT CASE WHEN NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'document ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
+  SELECT RAISE(ABORT,'document ownership') WHERE NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER tasks_owner_update BEFORE UPDATE ON tasks BEGIN
-  SELECT CASE WHEN NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
-  SELECT CASE WHEN NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'document ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
+  SELECT RAISE(ABORT,'document ownership') WHERE NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER events_owner_insert BEFORE INSERT ON calendar_events BEGIN
-  SELECT CASE WHEN NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
-  SELECT CASE WHEN NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'document ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
+  SELECT RAISE(ABORT,'document ownership') WHERE NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER events_owner_update BEFORE UPDATE ON calendar_events BEGIN
-  SELECT CASE WHEN NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
-  SELECT CASE WHEN NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'document ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
+  SELECT RAISE(ABORT,'document ownership') WHERE NEW.document_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER schedules_owner_insert BEFORE INSERT ON class_schedules BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER schedules_owner_update BEFORE UPDATE ON class_schedules BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER documents_owner_insert BEFORE INSERT ON documents BEGIN
-  SELECT CASE WHEN NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER documents_owner_update BEFORE UPDATE ON documents BEGIN
-  SELECT CASE WHEN NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'subject ownership') END;
+  SELECT RAISE(ABORT,'subject ownership') WHERE NEW.subject_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM subjects WHERE id=NEW.subject_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER subtasks_owner_insert BEFORE INSERT ON subtasks BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'task ownership') END;
+  SELECT RAISE(ABORT,'task ownership') WHERE NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER subtasks_owner_update BEFORE UPDATE ON subtasks BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'task ownership') END;
+  SELECT RAISE(ABORT,'task ownership') WHERE NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER sections_owner_insert BEFORE INSERT ON document_sections BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'document ownership') END;
+  SELECT RAISE(ABORT,'document ownership') WHERE NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER runs_owner_insert BEFORE INSERT ON agent_runs BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'document ownership') END;
+  SELECT RAISE(ABORT,'document ownership') WHERE NOT EXISTS(SELECT 1 FROM documents WHERE id=NEW.document_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER steps_owner_insert BEFORE INSERT ON agent_steps BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM agent_runs WHERE id=NEW.run_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'run ownership') END;
+  SELECT RAISE(ABORT,'run ownership') WHERE NOT EXISTS(SELECT 1 FROM agent_runs WHERE id=NEW.run_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER results_owner_insert BEFORE INSERT ON analysis_results BEGIN
-  SELECT CASE WHEN NOT EXISTS(SELECT 1 FROM agent_runs WHERE id=NEW.run_id AND user_id=NEW.user_id AND document_id=NEW.document_id) THEN RAISE(ABORT,'run ownership') END;
+  SELECT RAISE(ABORT,'run ownership') WHERE NOT EXISTS(SELECT 1 FROM agent_runs WHERE id=NEW.run_id AND user_id=NEW.user_id AND document_id=NEW.document_id);
 END;

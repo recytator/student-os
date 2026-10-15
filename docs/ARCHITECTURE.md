@@ -55,6 +55,7 @@ erDiagram
   subjects o|--o{ calendar_events : grupuje
   subjects o|--o{ documents : zawiera
   tasks ||--o{ subtasks : dzieli
+  tasks o|--o{ calendar_events : wiąże_terminy_i_bloki
   documents ||--o{ document_sections : tekst_stron
   documents ||--o{ agent_runs : analizuje
   documents o|--o{ tasks : zrodlo
@@ -65,6 +66,8 @@ erDiagram
 Każda tabela prywatnych danych ma `user_id`. Klucze obce wymuszają usunięcia kaskadowe lub `SET NULL`. Triggery blokują przypięcie zadań, wydarzeń i zajęć do cudzych przedmiotów, a także powiązanie dokumentów i wyników z cudzymi rekordami. API dodatkowo sprawdza właściciela przed odczytem i zapisem. Indeksy obejmują właściciela i terminy, historię uruchomień, strony oraz klucze cache. Unikalny `(user_id,hash)` zapobiega podwójnemu zapisowi tego samego PDF; `(user_id,document_id,proposal_id)` chroni zatwierdzanie przed powieleniem.
 
 `analysis_results` zawiera propozycje przed zatwierdzeniem. Tabele `tasks` i `calendar_events` przechowują zatwierdzone dane. `agent_runs.context_json` to checkpoint, `agent_steps` to operacyjne logi. Elastyczne wyniki agentów mają walidowane JSON-y, natomiast encje akademickie są znormalizowane. Preferencje mają wersjonowalny JSON walidowany Zod przy zapisie i odczycie.
+
+Migracja `0003_task_calendar_links.sql` dodaje opcjonalne `calendar_events.task_id`: wygenerowane terminy i bloki są powiązane z zadaniem, a ręczne wydarzenia zachowują NULL. Zmiana terminu zadania synchronizuje powiązany termin i unieważnia wcześniejsze szacowane bloki. Nie uruchamia automatycznej, ukrytej analizy AI. Usunięcie zadania usuwa jego powiązane wydarzenia przez FK.
 
 ## Przepływ agentowy
 

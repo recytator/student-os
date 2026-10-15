@@ -42,6 +42,14 @@ DocumentAgent, DeadlineAgent, PlannerAgent i ReviewAgent są rolami uruchamianym
 
 Samo sprawdzenie istnienia uruchomienia przed `INSERT` nie zabezpiecza przed wyścigiem dwóch żądań. Migracja `0002_one_active_run.sql` dodaje częściowy indeks UNIQUE na `(user_id,document_id)` dla stanów `document`, `deadline`, `planner`, `review`, `approval`. Orkiestrator po konflikcie zwraca istniejące wykonanie. Dzienna rezerwacja analizy może w wyścigu zostać zużyta konserwatywnie; nigdy nie zwiększa to liczby dozwolonych wywołań AI. Przed utworzeniem indeksu migracja zamyka historyczne duplikaty, zachowując najbardziej zaawansowany workflow oraz wszystkie checkpointy i logi. Nie zmieniamy już zastosowanej migracji `0001`.
 
+## ADR-011: Zgodna semantycznie składnia triggerów dla zdalnej migracji
+
+Pierwsza próba wdrożenia zgłosiła `incomplete input: SQLITE_ERROR 7500` dla migracji `0001`, chociaż SQLite, Miniflare i lokalny splitter Wrangler przechodziły. Analiza kodu Wrangler 4.151 wykazała różne ścieżki: lokalnie używa `unstable_splitSqlQuery`, a zdalne `migrations apply` przekazuje cały plik i znacznik migracji jako jedno pole `sql` do REST `/query`. Nie mamy dowodu, że błąd pochodzi z lokalnego splittera.
+
+Przygotowano minimalną poprawkę zgodności: w triggerach `0001` i `0003` wyrażenia `SELECT CASE WHEN warunek THEN RAISE(ABORT,...) END` zastępuje równoważne `SELECT RAISE(ABORT,...) WHERE warunek`. Usunięto średniki z komentarzy SQL. Warunki kontroli właściciela, rodzaj przerwania i komunikaty pozostają takie same. Regresja `tests/integration/migration-transport.test.ts` wykonuje faktyczny splitter zainstalowanego Wrangler, wszystkie migracje i 20 prób przekroczenia własności w D1 Miniflare. Wynik lokalny nie potwierdza jeszcze usunięcia błędu zdalnego; musi go potwierdzić ponowny run CI.
+
+Jest to wyjątek od utrzymywania zastosowanych migracji jako niezmiennych: lokalnie zastosowana składnia ma identyczne działanie, a pierwsza zdalna migracja nie została zatwierdzona. Nie wprowadzamy własnego protokołu migracji ani dodatkowej usługi.
+
 ## Źródła discovery — zweryfikowane 15.10.2026
 
 Supervisor sprawdził aktualną oficjalną dokumentację przed implementacją. Wartości są limitami oferty, nie odczytem zużycia konta użytkownika.

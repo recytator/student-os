@@ -1,12 +1,12 @@
--- Explicit relation: only generated task events are linked; manually-created events stay NULL.
+-- Explicit relation: only generated task events are linked, manually-created events stay NULL.
 ALTER TABLE calendar_events ADD COLUMN task_id TEXT REFERENCES tasks(id) ON DELETE CASCADE;
 CREATE INDEX events_task ON calendar_events(user_id,task_id);
 
 CREATE TRIGGER events_task_owner_insert BEFORE INSERT ON calendar_events BEGIN
-  SELECT CASE WHEN NEW.task_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'task ownership') END;
+  SELECT RAISE(ABORT,'task ownership') WHERE NEW.task_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id);
 END;
 CREATE TRIGGER events_task_owner_update BEFORE UPDATE ON calendar_events BEGIN
-  SELECT CASE WHEN NEW.task_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id) THEN RAISE(ABORT,'task ownership') END;
+  SELECT RAISE(ABORT,'task ownership') WHERE NEW.task_id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM tasks WHERE id=NEW.task_id AND user_id=NEW.user_id);
 END;
 
 -- Backfill only deterministic, run-namespaced relationships from v1. No title matching.
