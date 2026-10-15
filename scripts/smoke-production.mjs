@@ -32,6 +32,31 @@ for (const [path, status] of [
     throw new Error(`Smoke check ${path}: expected ${status}, got ${response.status}`);
 }
 console.log(`Health and private API protection verified: ${base}`);
+if (process.env.OAUTH_CONFIGURED === 'true') {
+  const response = await fetch(base + '/api/auth/login', {
+    redirect: 'manual',
+    signal: AbortSignal.timeout(20_000),
+  });
+  if (response.status !== 302)
+    throw new Error(`OAuth initiation expected 302, got ${response.status}`);
+  const redirect = new URL(response.headers.get('Location'));
+  const stateCookie = response.headers.get('Set-Cookie') ?? '';
+  if (
+    redirect.origin !== 'https://github.com' ||
+    redirect.pathname !== '/login/oauth/authorize' ||
+    redirect.searchParams.get('redirect_uri') !== base + '/api/auth/callback' ||
+    redirect.searchParams.get('code_challenge_method') !== 'S256' ||
+    !redirect.searchParams.get('client_id') ||
+    redirect.searchParams.has('client_secret') ||
+    !stateCookie.includes('HttpOnly') ||
+    !stateCookie.includes('Secure') ||
+    !stateCookie.includes('SameSite=Lax')
+  )
+    throw new Error('OAuth initiation failed redirect or cookie security assertions.');
+  console.log(
+    'Production OAuth initiation verified: GitHub redirect, callback, PKCE, secure cookie.',
+  );
+}
 console.log(
   'Live OAuth, PDF/Workers AI and device persistence still require an authenticated acceptance test.',
 );

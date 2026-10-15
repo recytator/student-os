@@ -1,4 +1,5 @@
 import { spawnSync } from 'node:child_process';
+import { appendFileSync } from 'node:fs';
 const id = process.env.GITHUB_CLIENT_ID;
 const secret = process.env.GITHUB_CLIENT_SECRET;
 if (!id || !secret) {
@@ -22,3 +23,4 @@ if (result.status !== 0) {
   process.exit(1);
 }
 console.log('OAuth secrets configured securely.');
+if (process.env.GITHUB_OUTPUT) appendFileSync(process.env.GITHUB_OUTPUT, 'oauth_configured=true\n');

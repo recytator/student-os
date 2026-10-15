@@ -42,6 +42,7 @@ jobs:
       - name: Publish Worker and static assets
         run: npx wrangler deploy --config wrangler.production.json
       - name: Configure OAuth secrets without shell interpolation
+        id: oauth
         env:
           GITHUB_CLIENT_ID: ${{ secrets.STUDENTOS_GITHUB_CLIENT_ID }}
           GITHUB_CLIENT_SECRET: ${{ secrets.STUDENTOS_GITHUB_CLIENT_SECRET }}
@@ -49,6 +50,7 @@ jobs:
       - name: Check health and unauthenticated access
         env:
           APP_URL: ${{ steps.prepare.outputs.app_url }}
+          OAUTH_CONFIGURED: ${{ steps.oauth.outputs.oauth_configured }}
         run: node scripts/smoke-production.mjs
   live-ai-acceptance:
     needs: deploy

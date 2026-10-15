@@ -1,36 +1,36 @@
 # Bezpieczna kontynuacja StudentOS
 
-Checkpoint 15.10.2026 po integracji, lokalnym QA i udanym GitHub Actions CI. Kod implementacji zapisano na main w commicie `7c96aa1`; [CI zakończone success](https://github.com/recytator/student-os/actions/runs/38737400553). Repozytorium: https://github.com/recytator/student-os. Projekt znajduje się w `/workspace/student-os`; nie inicjalizuj go ponownie.
+Checkpoint15.10.2026. Projekt istnieje w `/workspace/student-os`, repozytorium https://github.com/recytator/student-os. Nie inicjalizuj ponownie. Użytkownik potwierdził Workers Free i zezwolił na wdrożenie oraz standardowe poprawki. Nigdy nie aktywuj płatnego planu ani nie proś o sekrety w czacie.
 
-## Co jest sprawdzone
+## Fakty potwierdzone
 
-- 56/56 testów jednostkowych i integracyjnych z rzeczywistym lokalnym D1. Odpowiedzi AI są jawnie testowe.
-- 12/12 E2E z rzeczywistym zbudowanym frontendem i Workerem, na mobilnym i desktopowym Chromium.
-- Import i parsowanie dwóch stron PDF.js, CRUD, odświeżenie, źródła, zatwierdzanie, izolacja, CSRF, limity i migracje.
-- Dodatkowa kontrola Supervisora: 21 kombinacji siedmiu ekranów i szerokości 320/390/1440 px; bez overflow i nieobsłużonych błędów przeglądarki. Zrzuty lokalne: `artifacts/qa-review/`.
-- TypeScript strict, ESLint, Prettier, build i Wrangler dry-run. Worker: około 43 KiB gzip; konfiguracja produkcyjna ma `DEV_AUTH=false`.
-- Pełne `npm audit`: 0 zgłoszonych podatności podczas tej sesji.
+- **Adres aplikacji:** https://studentos.recytator.workers.dev
+- [Run38782990131](https://github.com/recytator/student-os/actions/runs/38782990131), jobdeploy116587705205: **SUCCESS**, health200, strona200, prywatne bootstrap/tasks401. Cały run ma failure z powodu osobnego testu AI, nie nieudanej publikacji.
+- D1 `studentos`, UUID `3655ea82-fdf2-45ac-9746-6080bfd37865`: wszystkie trzy migracje zastosowane. Nie zmieniaj już tych migracji ani nie resetuj produkcyjnej bazy.
+- Sekrety Cloudflare są w GitHub Actions i działają. Nie ma ich lokalnie; to nie blokuje wdrożeń przez Actions. Lokalne połączenia sieciowe do Cloudflare/produkcji/pobrania artefaktu są ograniczone; GitHub runner ma dostęp. Nie omijaj polityki sieci.
+- [CI84e06cf](https://github.com/recytator/student-os/actions/runs/38782987046): SUCCESS, z E2E. Po kolejnej poprawce lokalnie **83/83 Vitest**, lint, TypeScript, build oraz formatcheck PASS. Historyczne **12/12 E2E** i21 kombinacji ekranów320/390/1440px opisano w TEST_REPORT.
 
-Dowody i konkretne ograniczenia: [TEST_REPORT.md](TEST_REPORT.md), [ACCEPTANCE.md](ACCEPTANCE.md). Nie oznaczaj tych dowodów jako produkcyjnych.
+## Aktualny krok — prawdziwe AI
 
-## Co blokuje następny etap
+Pierwszy live test job116588185483 z run38782990131 **nie przeszedł**: DocumentAgent dwie nieudane rezerwacje, brak zaakceptowanych wyników. Cleanup potwierdzony. Artefakt11995259966 zawiera raport i rzeczywiste operacyjne kroki. Nie deklaruj czterech udanych agentów na podstawie tego przebiegu.
 
-`wrangler whoami` zwrócił „You are not authenticated”. Konfiguracja środowiska nie udostępnia gotowej tożsamości ani sekretów Cloudflare. Nie ma skonfigurowanej aplikacji GitHub OAuth. Publiczne wdrożenie, prawdziwe wywołanie Workers AI, zdalne migracje D1 i fizyczny Android pozostają niezweryfikowane.
+Commit `28cd975` wyłącza udokumentowany domyślny thinking GLM przez `chat_template_kwargs.enable_thinking=false`, przy zachowaniu1500tokenów, oraz dodaje bezpieczne diagnostyki Zod i checkpointów. Pierwotna przyczyna nadal jest hipotezą.
 
-## Następne działania po konfiguracji użytkownika
+**Ponowny deploy i live test:** [run38783763164](https://github.com/recytator/student-os/actions/runs/38783763164), commit28cd975, uruchomiony z deploy/studentos. Odczytaj aktualny wynik i logi zanim wykonasz kolejne zmiany. Test jest lokalnym handlerem z rzeczywistymi zdalnymi bindingami AI i D1, nie testem produkcyjnego OAuth/CPU. Maksymalnie5rezerwacji na test i12minut; nie zwiększaj bez potrzeby.
 
-1. Odczytaj [DEPLOYMENT.md](DEPLOYMENT.md). Sekrety należą do GitHub Actions Secrets albo Worker Secrets, nigdy do czatu.
-2. Potwierdź Workers Free. Nie aktywuj Paid ani AI Gateway credits. Uruchom przygotowany workflow wdrożenia.
-3. Odczytaj rzeczywisty URL z ukończonego wdrożenia, skonfiguruj callback GitHub OAuth i uruchom workflow ponownie.
-4. Zaloguj się i wykonaj scenariusz odbioru z dokumentacji: PDF → cztery role → źródła → zatwierdzenie → D1 → ponowne logowanie.
-5. Pobierz wynik rzeczywistej analizy i uruchom evaluator względem obu zestawów referencyjnych. Zapisz precision/recall/F1 dopiero dla tego wyniku; plik z mockiem nie stanowi oceny modelu.
-6. Zmierz CPU i wykorzystanie konta w Cloudflare. Tokeny w odpowiedzi nie są dokładnym odczytem Neurons ani rachunkiem.
-7. Sprawdź PWA na fizycznym Androidzie i synchronizację na drugim urządzeniu; uzupełnij raport datą i identyfikatorami wykonań.
+## Pozostałe działanie użytkownika — OAuth
 
-Nie uruchamiaj zdalnego wdrożenia z zerowym lokalnym `database_id`. Skrypt generuje `wrangler.production.json` z prawdziwą bazą i subdomeną. Oryginalny PDF pozostaje na urządzeniu, a prywatne API i tekst nie trafiają do cache PWA. Nowe migracje dodawaj po 0003; nie zmieniaj zastosowanych migracji.
+Dwa sekrety GitHub OAuth były nieobecne w ostatnim wdrożeniu. Użytkownik otrzymał już asynchroniczną instrukcję:
 
-## Najnowsze ustalenie po ponownej prośbie użytkownika
+1. https://github.com/settings/applications/new
+2. Name: StudentOS; Homepage: https://studentos.recytator.workers.dev; Callback: https://studentos.recytator.workers.dev/api/auth/callback
+3. W https://github.com/recytator/student-os/settings/secrets/actions dodać STUDENTOS_GITHUB_CLIENT_ID i STUDENTOS_GITHUB_CLIENT_SECRET, bez przesyłania wartości do czatu.
+4. Potwierdzić „OAuth gotowe”. Wtedy samodzielnie ponów deployjob lub opublikuj sprawdzony commit do gałęzi deploy/studentos; sekrety zostaną wczytane na runnerze.
 
-Kod z poprawką CI i kontrolą dostępu jest na `main`, commit `b7683f5`. [Pełny CI po poprawce](https://github.com/recytator/student-os/actions/runs/38754614213) przeszedł. [Kontrola poświadczeń na runnerze GitHub](https://github.com/recytator/student-os/actions/runs/38754614301) potwierdziła brak `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `STUDENTOS_GITHUB_CLIENT_ID` i `STUDENTOS_GITHUB_CLIENT_SECRET`; nie odczytywano ani nie ujawniano wartości sekretów. Domyślny właściciel pochodzi teraz z `github.actor_id`, więc ręczne ustawienie `GITHUB_OWNER_ID` jest opcjonalne.
+Nie ma narzędzia sterującego kartami przeglądarki użytkownika ani rejestracją OAuth, mimo jego ogólnej zgody. Do konfiguracji podawaj dokładne linki. Po podłączeniu sprawdź302login→GitHub bez ujawnienia sekretnych cookies, a następnie rzeczywiste logowanie właściciela, CRUD, PDF i limitCPU. Brak OAuth pozostawia prywatne API zamknięte, nie włączaj DEV_AUTH w produkcji.
 
-Użytkownik upoważnił do przejęcia całego wdrożenia, ale dostępne narzędzia nie dają sterowania zalogowanymi kartami jego przeglądarki. Po dodaniu dwóch sekretów Cloudflare należy ponownie sprawdzić gotowość, wykonać wdrożenie na Workers Free i dopiero dla prawdziwego URL skonfigurować OAuth. Nie prosić o przekazywanie tokenu w czacie ani ponownie o zgodę na standardowe czynności.
+## Sposób kontynuacji przez narzędzia
+
+GitHub connector pozwala odczytywać workflowjobs/logi, pobierać artefakty oraz ponowić job. `gh` lokalnie nie ma działającego tokenu; push git działa. Zwykły push main uruchamia CI, a tylko push deploy/studentos publikuje. Zmiany plików współdzielą agenci; oryginalny użytkownik jawnie prosił o delegowanie. AgentAI zrealizował poprawkęthinking, Architect naprawęmigracji, QA niezależny audyt skryptu; żaden z tych rezultatów nie jest udawaną historią.
+
+Dokumenty: [DEPLOYMENT](DEPLOYMENT.md), [LIVE_TESTING](LIVE_TESTING.md), [TEST_REPORT](TEST_REPORT.md), [DEVELOPMENT_LOG](DEVELOPMENT_LOG.md), [PRESENTATION](PRESENTATION.md). Zaktualizuj raporty po rzeczywistym wyniku AI. Pełny odbiór nadal wymaga OAuth, telefonu/PWA i produkcyjnego CPU; lokalne testy ich nie dowodzą.

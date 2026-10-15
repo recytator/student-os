@@ -7,7 +7,7 @@ Raport aktualizowany przez rzeczywiście uruchomionego QA Agenta. Data: 15.10.20
 - Vitest: walidacja kontraktów, kalendarza, źródeł, reguł przeglądu, autoryzacji i budżetów.
 - Integracja: prawdziwy lokalny emulator D1 (Miniflare/workerd), pełne migracje SQL, rzeczywisty handler aplikacji Worker. Jedynie binding AI ma jawne odpowiedzi testowe. D1 nie jest mockiem.
 - Playwright: wykonane projekty Android Chromium 390 × 844 oraz desktop Chromium 1440 × 1000. Rzeczywisty frontend, parser PDF.js, API i lokalny D1; emulacja viewportu i dotyku, bez fizycznego telefonu.
-- Żaden test nie wywołuje zdalnego modelu AI i nie generuje opłat. Przygotowany kod produkcyjny korzysta z bindingu Workers AI; działanie tego bindingu wymaga osobnej walidacji po autoryzacji konta.
+- Testy Vitest/E2E opisane w części lokalnej korzystają z jawnych odpowiedzi testowych AI. Oddzielny live test uruchomiony w GitHub Actions korzysta z rzeczywistych bindingów AI i D1; jego wynik i granice dowodów opisano na końcu raportu.
 
 ## Stan weryfikacji
 
@@ -97,3 +97,14 @@ Konfiguracja Playwright sama kompiluje aplikację, odtwarza wydzielony testowy D
 Po konfiguracji Cloudflare i GitHub OAuth: logowanie z telefonu, rzeczywisty AI binding, cztery role z rzeczywistymi odpowiedziami, dokładne zużycie dostawcy jeśli udostępnione, trwałość danych po ponownym logowaniu, migracje zdalnego D1, instalacja PWA na Androidzie i test synchronizacji między urządzeniami. Tych wyników nie można potwierdzić na podstawie testów lokalnych.
 
 Po poprawce limitu czasu pełny [CI dla b7683f5](https://github.com/recytator/student-os/actions/runs/38754614213) zakończył się `completed / success`, łącznie z testami oraz E2E. Kontrola [gotowości wdrożenia](https://github.com/recytator/student-os/actions/runs/38754614301) działa poprawnie, ale jej raport ma status `blocked`: oba sekrety Cloudflare i oba sekrety OAuth są nieobecne w GitHub Actions. Właściciel jest poprawnie określony automatycznie. To wynik sprawdzenia konfiguracji, nie wdrożenie.
+
+## Weryfikacja po podłączeniu Cloudflare — 15.10.2026
+
+- Konto Workers Free potwierdzone przez właściciela; poświadczenia odczytywane wyłącznie jako sekrety Actions. Skrypty nie zmieniały planu ani rozliczeń.
+- Pierwsza migracja zdalna zwróciła SQLite7500/incompleteinput. Równoważny zapis triggerów SELECT RAISE WHERE oraz usunięcie średników z komentarzy rozwiązały problem transportu. Dodano21testów, w tym20 naruszeń własności. [Run38782784943](https://github.com/recytator/student-os/actions/runs/38782784943) potwierdził zastosowanie0001/0002/0003 i publikację. Natychmiastowy health404 spowodował niepowodzenie smoke; dodano ograniczone oczekiwanie na gotowość trasy.
+- [Run38782990131](https://github.com/recytator/student-os/actions/runs/38782990131), deployjob116587705205: **SUCCESS**; https://studentos.recytator.workers.dev odpowiada HTTP200, health200, bootstrap i tasks401. Wersja4796abc1-e23c-48c0-9f84-e5e1a0244ed4.
+- [PełnyCI84e06cf](https://github.com/recytator/student-os/actions/runs/38782987046): SUCCESS, wraz z E2E.
+- LiveAIjob116588185483 tego samego deployrun: **FAIL**. Lokalny handler z prawdziwym zdalnym D1 i AI wykonał dwie rezerwacje DocumentAgent, nie ukończył roli, nie zapisał zaakceptowanych zadań. Czas98,922s. Cleanup osobnego testowego użytkownika i jego danych potwierdzony. [Artefakt11995259966](https://github.com/recytator/student-os/actions/runs/38782990131/artifacts/11995259966) zawiera raport i operacyjne kroki. Nie ma podstaw do wyliczenia jakości ekstrakcji ani deklaracji czterech ukończonych agentów.
+- Po udokumentowanym wyłączeniu domyślnego thinking GLM oraz dodaniu diagnostyk: lokalnie **83/83PASS**,12plików,23,24s; ESLint, TypeScript, Vitebuild i PrettierPASS. Dwa nowe testy sprawdzają właściwą konfigurację GLM i niezmienioną Gemma. Ponowny [deploy/test28cd975](https://github.com/recytator/student-os/actions/runs/38783763164) wymaga odczytania wyniku.
+
+Bieżące dowody zastępują wcześniejsze stwierdzenia o braku dostępu Cloudflare i niewykonanych migracjach. OAuth oraz fizyczny Android nadal wymagają konfiguracji/odbioru. Test lokalnego handlera ze zdalnymi bindingami nie dowodzi zmieszczenia żądań w produkcyjnym limicieCPU Workers Free.
