@@ -1,0 +1,46 @@
+{
+  "name": "Sylabus referencyjny — terminy jednoznaczne",
+  "academic_year": "2026/2027",
+  "pages": [
+    {
+      "page": 1,
+      "text": "SYLABUS TESTOWY - Sztuczna inteligencja\nRok akademicki 2026/2027.\nProjekt: oddanie raportu do 20.11.2026.\nKolokwium odbedzie sie 04.12.2026.\nWymagane jest przygotowanie prezentacji projektu."
+    },
+    {
+      "page": 2,
+      "text": "TERMINY ZALICZENIA\nEgzamin: 22.01.2027.\nSprawozdanie z laboratorium nalezy oddac do 15.01.2027.\nDokument demonstracyjny do testowania StudentOS."
+    }
+  ],
+  "gold": [
+    {
+      "title": "Oddanie raportu projektu",
+      "due_date": "2026-11-20",
+      "page": 1,
+      "quote": "Projekt: oddanie raportu do 20.11.2026."
+    },
+    {
+      "title": "Kolokwium",
+      "due_date": "2026-12-04",
+      "page": 1,
+      "quote": "Kolokwium odbedzie sie 04.12.2026."
+    },
+    {
+      "title": "Egzamin",
+      "due_date": "2027-01-22",
+      "page": 2,
+      "quote": "Egzamin: 22.01.2027."
+    },
+    {
+      "title": "Sprawozdanie z laboratorium",
+      "due_date": "2027-01-15",
+      "page": 2,
+      "quote": "Sprawozdanie z laboratorium nalezy oddac do 15.01.2027."
+    },
+    {
+      "title": "Przygotowanie prezentacji projektu",
+      "due_date": null,
+      "page": 1,
+      "quote": "Wymagane jest przygotowanie prezentacji projektu."
+    }
+  ]
+}

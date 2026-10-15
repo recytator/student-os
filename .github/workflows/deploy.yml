@@ -1,0 +1,48 @@
+name: Deploy StudentOS (Workers Free)
+on:
+  workflow_dispatch:
+    inputs:
+      free_plan_confirmed:
+        description: 'Potwierdzam: konto używa Workers Free, bez płatnego planu i kredytów AI Gateway'
+        required: true
+        type: boolean
+        default: false
+permissions:
+  contents: read
+concurrency:
+  group: studentos-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: inputs.free_plan_confirmed
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GITHUB_OWNER_ID: ${{ vars.GITHUB_OWNER_ID }}
+      FREE_PLAN_CONFIRMED: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run lint && npm test && npm run build
+      - id: prepare
+        run: node scripts/prepare-deployment.mjs
+      - name: Apply migrations
+        run: npx wrangler d1 migrations apply studentos --remote --config wrangler.production.json
+      - name: Publish Worker and static assets
+        run: npx wrangler deploy --config wrangler.production.json
+      - name: Configure OAuth secrets without shell interpolation
+        env:
+          GITHUB_CLIENT_ID: ${{ secrets.STUDENTOS_GITHUB_CLIENT_ID }}
+          GITHUB_CLIENT_SECRET: ${{ secrets.STUDENTOS_GITHUB_CLIENT_SECRET }}
+        run: node scripts/configure-secrets.mjs
+      - name: Check health and unauthenticated access
+        env:
+          APP_URL: ${{ steps.prepare.outputs.app_url }}
+        run: node scripts/smoke-production.mjs

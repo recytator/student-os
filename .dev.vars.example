@@ -1,0 +1,7 @@
+# LOCAL ONLY: explicit development authentication, accepted only on loopback hostnames
+DEV_AUTH=true
+# Production: configure GitHub OAuth; NEVER put real secrets in this tracked example.
+# GITHUB_CLIENT_ID=
+# GITHUB_CLIENT_SECRET=
+# GITHUB_OWNER_ID=
+# APP_ORIGIN=https://studentos.<your-subdomain>.workers.dev
