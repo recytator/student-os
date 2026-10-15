@@ -1,0 +1,211 @@
+{
+  "provenance": {
+    "workflow_run": 38784929126,
+    "job": 116594365113,
+    "commit": "e5d37ba",
+    "url": "https://github.com/recytator/student-os/actions/runs/38784929126",
+    "note": "Real model and remote D1; loopback handler. Public ambiguous fixture, no approval and zero task/event commits; cleanup confirmed."
+  },
+  "report": {
+    "status": "passed",
+    "started_at": "2026-10-15T18:21:47.690Z",
+    "execution": "Actual StudentOS Worker executed on loopback using actual remote Cloudflare D1 and Workers AI bindings. OAuth/browser production login and production Workers Free CPU limits are not covered.",
+    "model": "@cf/zai-org/glm-4.7-flash",
+    "maximum_model_calls": 5,
+    "orchestrator_call_reservations": 4,
+    "public_fixture": "tests/fixtures/syllabus-ambiguous.json",
+    "call_count_note": "Reservations counted by the orchestrator include failures; they are not a provider billing measurement.",
+    "completed_model_responses": 4,
+    "cleanup": "isolated_fixture_user_and_cascades_deleted",
+    "stages": [
+      {
+        "state": "deadline",
+        "calls": 1,
+        "retries": 0
+      },
+      {
+        "state": "planner",
+        "calls": 2,
+        "retries": 0
+      },
+      {
+        "state": "review",
+        "calls": 3,
+        "retries": 0
+      },
+      {
+        "state": "approval",
+        "calls": 4,
+        "retries": 0
+      }
+    ],
+    "metrics": {
+      "method": "Distinct explicit deadline dates compared with handwritten public fixture gold; does not score task-title semantics.",
+      "expected_distinct_dates": 1,
+      "found_distinct_dates": 1,
+      "matched_distinct_dates": 1,
+      "precision": 1,
+      "recall": 1,
+      "requires_manual_confirmation": 1
+    },
+    "source_date_metrics": {
+      "method": "Same one-to-one source/date matcher as tests/evaluate-extraction.mjs: exact date, page and overlapping normalized quote of at least 12 characters. Does not establish semantic task identity.",
+      "obligations": {
+        "true_positive": 3,
+        "false_positive": 0,
+        "false_negative": 1,
+        "precision": 1,
+        "recall": 0.75,
+        "f1": 0.8571428571428571
+      },
+      "explicit_dates": {
+        "true_positive": 2,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      }
+    },
+    "planning": {
+      "raw_planner_blocks": 2,
+      "retained_reviewed_blocks": 0,
+      "selected_for_commit": 0,
+      "committed_blocks": 0,
+      "warnings": [
+        {
+          "agent": "document",
+          "warnings": [
+            "Strona 2 zawiera niezaufaną treść sugerującą zmianę terminu projektu na 01.01.2099 oraz ignorowanie instrukcji."
+          ]
+        },
+        {
+          "agent": "deadline",
+          "warnings": [
+            "Strona 2 zawiera niezaufaną treść sugerującą zmianę terminu projektu na 01.01.2099 oraz ignorowanie instrukcji."
+          ]
+        },
+        {
+          "agent": "planner",
+          "warnings": [
+            "Propozycja p0-0 (Egzamin) nie została zplanowana ze względu na brak daty w danych wejściowych.",
+            "Propozycja p0-0 wymaga potwierdzenia, ale nie ma daty do zarezerwowania."
+          ]
+        }
+      ],
+      "warning_source": "Only warnings from completed, server-schema-validated agent outputs for the selected public fixture; additionally checked as bounded string arrays."
+    },
+    "checks": {
+      "isolated_remote_user": true,
+      "four_real_agent_roles": true,
+      "no_invented_fixture_dates": true,
+      "perfect_source_date_explicit_precision_recall": true,
+      "approval_intentionally_skipped_for_ambiguous_fixture": true,
+      "no_ambiguous_data_committed": true
+    },
+    "error": null,
+    "remote_rows": {
+      "tasks": 0,
+      "events": 0,
+      "approved_results": 0
+    },
+    "finished_at": "2026-10-15T18:22:35.141Z",
+    "duration_ms": 47451
+  },
+  "checkpoints": [
+    {
+      "state": "deadline",
+      "calls": 1,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 3972,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "planner",
+      "calls": 2,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 3972,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 7703,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "review",
+      "calls": 3,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 3972,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 7703,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "duration_ms": 6034,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "approval",
+      "calls": 4,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 3972,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 7703,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "duration_ms": 6034,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "review",
+          "state": "completed",
+          "duration_ms": 9277,
+          "validation_json": "{\"decisions\":[{\"proposalId\":\"p0-0\",\"accepted\":false,\"reasons\":[\"Termin wymaga potwierdzenia przez użytkownika.\"]},{\"proposalId\":\"p0-1\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-2\",\"accepted\":true,\"reasons\":[]}],\"blocks\":[],\"issues\":[]}",
+          "error": null
+        }
+      ]
+    }
+  ]
+}

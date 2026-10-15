@@ -1,0 +1,206 @@
+{
+  "provenance": {
+    "workflow_run": 38786468483,
+    "job": 116600079868,
+    "commit": "422ee2f",
+    "url": "https://github.com/recytator/student-os/actions/runs/38786468483",
+    "note": "Actual GLM with trusted source references and conservative review. Loopback handler, real remote D1/AI. Public fixture; fixture records removed after verification."
+  },
+  "report": {
+    "status": "passed",
+    "started_at": "2026-10-15T18:33:55.617Z",
+    "execution": "Actual StudentOS Worker executed on loopback using actual remote Cloudflare D1 and Workers AI bindings. OAuth/browser production login and production Workers Free CPU limits are not covered.",
+    "model": "@cf/zai-org/glm-4.7-flash",
+    "maximum_model_calls": 5,
+    "orchestrator_call_reservations": 4,
+    "public_fixture": "tests/fixtures/syllabus-exact.json",
+    "call_count_note": "Reservations counted by the orchestrator include failures; they are not a provider billing measurement.",
+    "completed_model_responses": 4,
+    "cleanup": "isolated_fixture_user_and_cascades_deleted",
+    "stages": [
+      {
+        "state": "deadline",
+        "calls": 1,
+        "retries": 0
+      },
+      {
+        "state": "planner",
+        "calls": 2,
+        "retries": 0
+      },
+      {
+        "state": "review",
+        "calls": 3,
+        "retries": 0
+      },
+      {
+        "state": "approval",
+        "calls": 4,
+        "retries": 0
+      }
+    ],
+    "metrics": {
+      "method": "Distinct explicit deadline dates compared with handwritten public fixture gold; does not score task-title semantics.",
+      "expected_distinct_dates": 4,
+      "found_distinct_dates": 4,
+      "matched_distinct_dates": 4,
+      "precision": 1,
+      "recall": 1,
+      "requires_manual_confirmation": 1
+    },
+    "source_date_metrics": {
+      "method": "Same one-to-one source/date matcher as tests/evaluate-extraction.mjs: exact date, page and overlapping normalized quote of at least 12 characters. Does not establish semantic task identity.",
+      "obligations": {
+        "true_positive": 5,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      },
+      "explicit_dates": {
+        "true_positive": 4,
+        "false_positive": 0,
+        "false_negative": 0,
+        "precision": 1,
+        "recall": 1,
+        "f1": 1
+      }
+    },
+    "planning": {
+      "raw_planner_blocks": 6,
+      "retained_reviewed_blocks": 4,
+      "selected_for_commit": 4,
+      "committed_blocks": 4,
+      "warnings": [
+        {
+          "agent": "document",
+          "warnings": []
+        },
+        {
+          "agent": "deadline",
+          "warnings": []
+        },
+        {
+          "agent": "planner",
+          "warnings": []
+        }
+      ],
+      "warning_source": "Only warnings from completed, server-schema-validated agent outputs for the selected public fixture; additionally checked as bounded string arrays."
+    },
+    "checks": {
+      "isolated_remote_user": true,
+      "four_real_agent_roles": true,
+      "no_invented_fixture_dates": true,
+      "perfect_source_date_explicit_precision_recall": true,
+      "remote_d1_committed": true,
+      "perfect_fixture_deadline_date_precision_recall": true,
+      "refresh_retains_committed": true
+    },
+    "error": null,
+    "remote_rows": {
+      "tasks": 4,
+      "events": 8,
+      "completed_steps": 4,
+      "approved_results": 1
+    },
+    "finished_at": "2026-10-15T18:35:04.280Z",
+    "duration_ms": 68663
+  },
+  "checkpoints": [
+    {
+      "state": "deadline",
+      "calls": 1,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 14532,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "planner",
+      "calls": 2,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 14532,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 17396,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "review",
+      "calls": 3,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 14532,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 17396,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "duration_ms": 8585,
+          "validation_json": "{\"schema\":\"passed\",\"proposed_blocks\":6,\"retained_blocks\":4,\"rejected_ids\":[\"b0-0\",\"b0-5\"],\"rejected_blocks\":[{\"id\":\"b0-0\",\"reason\":\"outside_availability_or_class_conflict\"},{\"id\":\"b0-5\",\"reason\":\"outside_availability_or_class_conflict\"}]}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "approval",
+      "calls": 4,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 14532,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 17396,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "duration_ms": 8585,
+          "validation_json": "{\"schema\":\"passed\",\"proposed_blocks\":6,\"retained_blocks\":4,\"rejected_ids\":[\"b0-0\",\"b0-5\"],\"rejected_blocks\":[{\"id\":\"b0-0\",\"reason\":\"outside_availability_or_class_conflict\"},{\"id\":\"b0-5\",\"reason\":\"outside_availability_or_class_conflict\"}]}",
+          "error": null
+        },
+        {
+          "agent": "review",
+          "state": "completed",
+          "duration_ms": 4583,
+          "validation_json": "{\"decisions\":[{\"proposalId\":\"p0-0\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-1\",\"accepted\":false,\"reasons\":[\"Termin wymaga potwierdzenia przez użytkownika.\"]},{\"proposalId\":\"p0-2\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-3\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-4\",\"accepted\":true,\"reasons\":[]}],\"blocks\":[{\"id\":\"b0-1\",\"proposal_id\":\"p0-0\",\"title\":\"Oddanie raportu projektu\",\"start_at\":\"2026-10-19T16:00:00+01:00\",\"end_at\":\"2026-10-19T17:00:00+01:00\",\"estimated\":true,\"reason\":\"Dostępny slot we wtorek (2) po godzinie 16:00. Brak zajęć i wydarzeń.\"},{\"id\":\"b0-2\",\"proposal_id\":\"p0-0\",\"title\":\"Oddanie raportu projektu\",\"start_at\":\"2026-10-20T16:00:00+01:00\",\"end_at\":\"2026-10-20T17:00:00+01:00\",\"estimated\":true,\"reason\":\"Dostępny slot we środę (3) po godzinie 16:00. Brak zajęć i wydarzeń.\"},{\"id\":\"b0-3\",\"proposal_id\":\"p0-0\",\"title\":\"Oddanie raportu projektu\",\"start_at\":\"2026-10-21T16:00:00+01:00\",\"end_at\":\"2026-10-21T17:00:00+01:00\",\"estimated\":true,\"reason\":\"Dostępny slot we czwartek (4) po godzinie 16:00. Brak zajęć i wydarzeń.\"},{\"id\":\"b0-4\",\"proposal_id\":\"p0-0\",\"title\":\"Oddanie raportu projektu\",\"start_at\":\"2026-10-22T16:00:00+01:00\",\"end_at\":\"2026-10-22T17:00:00+01:00\",\"estimated\":true,\"reason\":\"Dostępny slot w piątek (5) po godzinie 16:00. Brak zajęć i wydarzeń.\"}],\"issues\":[],\"original_model_ids\":{\"accepted_ids\":[\"p0-0\",\"p0-2\",\"p0-3\",\"p0-4\"],\"rejected_ids\":[\"p0-1\"]},\"review_id_reconciliation\":{\"unknown_ids\":[],\"duplicate_ids\":[],\"conflicting_ids\":[],\"omitted_ids\":[],\"independently_rejected_ids\":[]}}",
+          "error": null
+        }
+      ]
+    }
+  ]
+}
