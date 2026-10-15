@@ -1,7 +1,7 @@
 import { spawnSync } from 'node:child_process';
 import { appendFileSync } from 'node:fs';
-const id = process.env.GITHUB_CLIENT_ID;
-const secret = process.env.GITHUB_CLIENT_SECRET;
+const id = process.env.GITHUB_CLIENT_ID?.trim();
+const secret = process.env.GITHUB_CLIENT_SECRET?.trim();
 if (!id || !secret) {
   console.log(
     'OAuth not configured yet: private API remains locked. Add STUDENTOS_GITHUB_CLIENT_ID and STUDENTOS_GITHUB_CLIENT_SECRET to GitHub Actions Secrets, then redeploy.',

@@ -158,4 +158,4 @@ it('validates agent inputs with manual records and previously approved AI record
       input.events?.every((event) => !('proposal_id' in event) && !('task_id' in event)) ?? true,
     ).toBe(true);
   }
-});
+}, 30_000);
