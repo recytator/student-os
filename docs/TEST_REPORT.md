@@ -95,3 +95,5 @@ Konfiguracja Playwright sama kompiluje aplikację, odtwarza wydzielony testowy D
 ## Pozostałe wymagane testy produkcyjne
 
 Po konfiguracji Cloudflare i GitHub OAuth: logowanie z telefonu, rzeczywisty AI binding, cztery role z rzeczywistymi odpowiedziami, dokładne zużycie dostawcy jeśli udostępnione, trwałość danych po ponownym logowaniu, migracje zdalnego D1, instalacja PWA na Androidzie i test synchronizacji między urządzeniami. Tych wyników nie można potwierdzić na podstawie testów lokalnych.
+
+Po poprawce limitu czasu pełny [CI dla b7683f5](https://github.com/recytator/student-os/actions/runs/38754614213) zakończył się `completed / success`, łącznie z testami oraz E2E. Kontrola [gotowości wdrożenia](https://github.com/recytator/student-os/actions/runs/38754614301) działa poprawnie, ale jej raport ma status `blocked`: oba sekrety Cloudflare i oba sekrety OAuth są nieobecne w GitHub Actions. Właściciel jest poprawnie określony automatycznie. To wynik sprawdzenia konfiguracji, nie wdrożenie.

@@ -28,3 +28,9 @@ Dowody i konkretne ograniczenia: [TEST_REPORT.md](TEST_REPORT.md), [ACCEPTANCE.m
 7. Sprawdź PWA na fizycznym Androidzie i synchronizację na drugim urządzeniu; uzupełnij raport datą i identyfikatorami wykonań.
 
 Nie uruchamiaj zdalnego wdrożenia z zerowym lokalnym `database_id`. Skrypt generuje `wrangler.production.json` z prawdziwą bazą i subdomeną. Oryginalny PDF pozostaje na urządzeniu, a prywatne API i tekst nie trafiają do cache PWA. Nowe migracje dodawaj po 0003; nie zmieniaj zastosowanych migracji.
+
+## Najnowsze ustalenie po ponownej prośbie użytkownika
+
+Kod z poprawką CI i kontrolą dostępu jest na `main`, commit `b7683f5`. [Pełny CI po poprawce](https://github.com/recytator/student-os/actions/runs/38754614213) przeszedł. [Kontrola poświadczeń na runnerze GitHub](https://github.com/recytator/student-os/actions/runs/38754614301) potwierdziła brak `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`, `STUDENTOS_GITHUB_CLIENT_ID` i `STUDENTOS_GITHUB_CLIENT_SECRET`; nie odczytywano ani nie ujawniano wartości sekretów. Domyślny właściciel pochodzi teraz z `github.actor_id`, więc ręczne ustawienie `GITHUB_OWNER_ID` jest opcjonalne.
+
+Użytkownik upoważnił do przejęcia całego wdrożenia, ale dostępne narzędzia nie dają sterowania zalogowanymi kartami jego przeglądarki. Po dodaniu dwóch sekretów Cloudflare należy ponownie sprawdzić gotowość, wykonać wdrożenie na Workers Free i dopiero dla prawdziwego URL skonfigurować OAuth. Nie prosić o przekazywanie tokenu w czacie ani ponownie o zgodę na standardowe czynności.
