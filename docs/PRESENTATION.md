@@ -4,7 +4,7 @@
 
 **Stan odbioru:** [ACCEPTANCE.md](ACCEPTANCE.md) mapuje kryteria użytkownika na implementację, lokalne dowody i blokady produkcyjne.
 
-**Zasada prezentacji:** oddzielamy kod zaimplementowany, testy wykonane lokalnie, testy z podstawionym modelem oraz zweryfikowane działanie produkcyjne. Źródłem bieżących wyników jest [TEST_REPORT.md](TEST_REPORT.md). Publikacja, OAuth i prawdziwe Workers AI wymagają konfiguracji kont; ten dokument sam nie potwierdza ich działania.
+**Zasada prezentacji:** oddzielamy kod zaimplementowany, testy wykonane lokalnie, testy z podstawionym modelem oraz zweryfikowane działanie produkcyjne. Źródłem bieżących wyników jest [TEST_REPORT.md](TEST_REPORT.md). Publikacja i konfiguracja OAuth są wykonane; rozpoczęcie logowania sprawdzono w produkcji. Rzeczywisty test czterech ról Workers AI oraz zatwierdzenia w zdalnym D1 jest zapisany w [evidence/2026-10-15-live-exact.json](evidence/2026-10-15-live-exact.json). Handler testu działał lokalnie ze zdalnymi bindingami; nie utożsamiaj tego z odebranym fizycznym telefonem i pełnym produkcyjnym OAuth.
 
 ## Plan wystąpienia
 
@@ -205,3 +205,16 @@ Dalszy rozwój: parser planu USOS, import ICS, przypomnienia i inteligentne powt
 **Czy wyniki testów dowodzą jakości AI?** Tylko rzeczywisty benchmark modelu na referencjach mierzy ekstrakcję tego modelu. Mocki sprawdzają zachowanie aplikacji i błędy, a walidatory sprawdzają reguły. Ich raporty są rozdzielone.
 
 **Czy system już jest produkcyjny?** Odpowiedź musi wynikać z aktualnego raportu: podaj zweryfikowany URL i testy tylko jeśli istnieją. Jeśli brak autoryzacji lub testu live, nazwij konkretny niespełniony warunek.
+
+## Rzeczywisty przykład do slajdu z logami —15.10.2026
+
+Źródło: [run38783763164](https://github.com/recytator/student-os/actions/runs/38783763164), job116590775923, publiczny sylabus testowy. Model: `@cf/zai-org/glm-4.7-flash`, thinking wyłączony zgodnie z kontraktem modelu. Nie jest to mock.
+
+| Agent         | Czas etapu | Wynik                                                          |
+| ------------- | ---------: | -------------------------------------------------------------- |
+| DocumentAgent |     8,367s | Struktura i źródła, kontrakt passed                            |
+| DeadlineAgent |    21,257s | 5 propozycji;4 pełne daty i1 wymagająca potwierdzenia          |
+| PlannerAgent  |    17,268s | Kontrakt passed; w tym przebiegu nie zatwierdzono bloków nauki |
+| ReviewAgent   |     9,724s | 4 propozycje dopuszczone, niepełna data wymaga potwierdzenia   |
+
+Całość83,591s,4 rezerwacje bez retry. Metryka zbioru pełnych dat:4 znalezione na4 referencyjne, precision1 i recall1. Odrębnie sprawdzono zdalne D1:4zadania,4wydarzenia,4ukończone kroki,1zatwierdzony wynik; odświeżenie zachowało committed. Dane publicznego fixture usunięto po teście, więc nie pojawiają się na prywatnym pulpicie właściciela. Nie nazywaj tych czterech wydarzeń blokami nauki.

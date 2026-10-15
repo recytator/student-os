@@ -39,4 +39,4 @@ Neurons nie są tokenami. Limit wywołań StudentOS nie gwarantuje zmieszczenia 
 
 ## Status weryfikacji integracji
 
-Weryfikacja dokumentacji: wykonana. Wywołanie rzeczywistego modelu na koncie użytkownika, produkcyjne zużycie neurons, przejście OAuth oraz produkcyjne limity CPU: **niezweryfikowane bez autoryzacji i wdrożenia**. Nie zastępujemy tych kroków symulowanymi wynikami.
+Weryfikacja dokumentacji: wykonana. Aktualizacja15.10.2026: wdrożenie Workers Free, zdalne migracjeD1 oraz cztery rzeczywiste wywołania GLM zostały potwierdzone (run38783763164). OAuth skonfigurowany i rozpoczęcie302 sprawdzone (run38784110083). Dokładne Neurons, pełny callback właściciela i produkcyjne CPU nadal wymagają odbioru. Nie zastępujemy tych kroków symulowanymi wynikami.

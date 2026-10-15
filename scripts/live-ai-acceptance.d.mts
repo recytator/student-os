@@ -32,3 +32,27 @@ export function goldMetrics(
   requires_manual_confirmation: number;
 };
 export function main(): Promise<Record<string, unknown>>;
+export function selectFixture(value?: string): string;
+export interface ExtractionScore {
+  true_positive: number;
+  false_positive: number;
+  false_negative: number;
+  precision: number;
+  recall: number;
+  f1: number;
+}
+export function sourceDateMetrics(
+  proposals: Array<{ due_date: string | null; sources?: Array<{ page: number; quote: string }> }>,
+  gold: Array<{ due_date: string | null; page: number; quote: string }>,
+): { method: string; obligations: ExtractionScore; explicit_dates: ExtractionScore };
+export function planningSummary(detail: {
+  steps: Array<Record<string, unknown>>;
+  result?: { blocks?: unknown[] };
+}): {
+  raw_planner_blocks: number | null;
+  retained_reviewed_blocks: number | null;
+  selected_for_commit: number;
+  committed_blocks: number;
+  warnings: Array<{ agent: unknown; warnings: string[] }>;
+  warning_source: string;
+};

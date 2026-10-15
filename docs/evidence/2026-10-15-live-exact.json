@@ -1,0 +1,164 @@
+{
+  "provenance": {
+    "workflow_run": 38783763164,
+    "job": 116590775923,
+    "commit": "28cd975",
+    "url": "https://github.com/recytator/student-os/actions/runs/38783763164",
+    "note": "Real model and remote D1; handler on loopback. Only public fixture; test data deleted after verification."
+  },
+  "report": {
+    "status": "passed",
+    "started_at": "2026-10-15T18:14:09.027Z",
+    "execution": "Actual StudentOS Worker executed on loopback using actual remote Cloudflare D1 and Workers AI bindings. OAuth/browser production login and production Workers Free CPU limits are not covered.",
+    "model": "@cf/zai-org/glm-4.7-flash",
+    "maximum_model_calls": 5,
+    "orchestrator_call_reservations": 4,
+    "public_fixture": "tests/fixtures/syllabus-exact.json",
+    "call_count_note": "Reservations counted by the orchestrator include failures; they are not a provider billing measurement.",
+    "completed_model_responses": 4,
+    "cleanup": "isolated_fixture_user_and_cascades_deleted",
+    "stages": [
+      {
+        "state": "deadline",
+        "calls": 1,
+        "retries": 0
+      },
+      {
+        "state": "planner",
+        "calls": 2,
+        "retries": 0
+      },
+      {
+        "state": "review",
+        "calls": 3,
+        "retries": 0
+      },
+      {
+        "state": "approval",
+        "calls": 4,
+        "retries": 0
+      }
+    ],
+    "metrics": {
+      "method": "Distinct explicit deadline dates compared with handwritten public fixture gold; does not score task-title semantics.",
+      "expected_distinct_dates": 4,
+      "found_distinct_dates": 4,
+      "matched_distinct_dates": 4,
+      "precision": 1,
+      "recall": 1,
+      "requires_manual_confirmation": 1
+    },
+    "checks": {
+      "isolated_remote_user": true,
+      "four_real_agent_roles": true,
+      "remote_d1_committed": true,
+      "perfect_fixture_deadline_date_precision_recall": true,
+      "refresh_retains_committed": true
+    },
+    "error": null,
+    "remote_rows": {
+      "tasks": 4,
+      "events": 4,
+      "completed_steps": 4,
+      "approved_results": 1
+    },
+    "finished_at": "2026-10-15T18:15:32.618Z",
+    "duration_ms": 83591
+  },
+  "checkpoints": [
+    {
+      "state": "deadline",
+      "calls": 1,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 8367,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "planner",
+      "calls": 2,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 8367,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 21257,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "review",
+      "calls": 3,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 8367,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 21257,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "duration_ms": 17268,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        }
+      ]
+    },
+    {
+      "state": "approval",
+      "calls": 4,
+      "steps": [
+        {
+          "agent": "document",
+          "state": "completed",
+          "duration_ms": 8367,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "deadline",
+          "state": "completed",
+          "duration_ms": 21257,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "planner",
+          "state": "completed",
+          "duration_ms": 17268,
+          "validation_json": "{\"schema\":\"passed\"}",
+          "error": null
+        },
+        {
+          "agent": "review",
+          "state": "completed",
+          "duration_ms": 9724,
+          "validation_json": "{\"decisions\":[{\"proposalId\":\"p0-0\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-1\",\"accepted\":false,\"reasons\":[\"Termin wymaga potwierdzenia przez użytkownika.\"]},{\"proposalId\":\"p0-2\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-3\",\"accepted\":true,\"reasons\":[]},{\"proposalId\":\"p0-4\",\"accepted\":true,\"reasons\":[]}],\"blocks\":[],\"issues\":[]}",
+          "error": null
+        }
+      ]
+    }
+  ]
+}

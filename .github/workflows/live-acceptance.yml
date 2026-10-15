@@ -1,0 +1,56 @@
+name: Live Workers AI acceptance (public fixture)
+on:
+  push:
+    branches: [qa/studentos]
+  workflow_dispatch:
+    inputs:
+      fixture:
+        type: choice
+        options: [ambiguous, exact]
+        default: ambiguous
+        required: true
+      free_plan_confirmed:
+        description: 'Konto nadal korzysta z Workers Free, bez płatnych nadwyżek'
+        type: boolean
+        default: false
+        required: true
+permissions:
+  contents: read
+concurrency:
+  group: studentos-production
+  cancel-in-progress: false
+jobs:
+  acceptance:
+    if: >-
+      (github.event_name == 'workflow_dispatch' && inputs.free_plan_confirmed) ||
+      (github.event_name == 'push' && github.ref == 'refs/heads/qa/studentos')
+    runs-on: ubuntu-latest
+    timeout-minutes: 16
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      FREE_PLAN_CONFIRMED: 'true'
+      STUDENTOS_LIVE_FIXTURE: ${{ inputs.fixture || 'ambiguous' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: Verify actual remote AI and D1 without publishing a Worker
+        run: node scripts/live-ai-acceptance.mjs
+      - name: Evaluate dates and source citations against handwritten gold
+        if: always()
+        run: |
+          if test -f artifacts/live-ai/actual-operational-run.json; then
+            node tests/evaluate-extraction.mjs "tests/fixtures/syllabus-${STUDENTOS_LIVE_FIXTURE}.json" artifacts/live-ai/actual-operational-run.json
+          fi
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: studentos-live-ai-${{ env.STUDENTOS_LIVE_FIXTURE }}
+          path: artifacts/live-ai/
+          retention-days: 14

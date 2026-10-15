@@ -79,6 +79,88 @@ export function goldMetrics(proposals, gold) {
   };
 }
 
+export function selectFixture(value = 'exact') {
+  if (!['exact', 'ambiguous'].includes(value)) throw new Error('INVALID_LIVE_FIXTURE');
+  return `tests/fixtures/syllabus-${value}.json`;
+}
+
+export function sourceDateMetrics(proposals, gold) {
+  const normalize = (value) => value.normalize('NFKC').replace(/\s+/g, ' ').trim().toLowerCase();
+  const matches = (prediction, expected) =>
+    prediction.sources?.some(
+      (source) =>
+        source.page === expected.page &&
+        (normalize(source.quote).includes(normalize(expected.quote)) ||
+          normalize(expected.quote).includes(normalize(source.quote))) &&
+        normalize(source.quote).length >= 12,
+    );
+  const measure = (expected, predicted) => {
+    const available = new Set(expected.map((_, index) => index));
+    let tp = 0;
+    for (const prediction of predicted) {
+      const index = [...available].find(
+        (candidate) =>
+          (prediction.due_date ?? null) === expected[candidate].due_date &&
+          matches(prediction, expected[candidate]),
+      );
+      if (index !== undefined) {
+        available.delete(index);
+        tp++;
+      }
+    }
+    const fp = predicted.length - tp,
+      fn = expected.length - tp,
+      precision = tp + fp ? tp / (tp + fp) : 0,
+      recall = tp + fn ? tp / (tp + fn) : 0;
+    return {
+      true_positive: tp,
+      false_positive: fp,
+      false_negative: fn,
+      precision,
+      recall,
+      f1: precision + recall ? (2 * precision * recall) / (precision + recall) : 0,
+    };
+  };
+  return {
+    method:
+      'Same one-to-one source/date matcher as tests/evaluate-extraction.mjs: exact date, page and overlapping normalized quote of at least 12 characters. Does not establish semantic task identity.',
+    obligations: measure(gold, proposals),
+    explicit_dates: measure(
+      gold.filter((item) => item.due_date),
+      proposals.filter((item) => item.due_date),
+    ),
+  };
+}
+
+export function planningSummary(detail) {
+  const completed = detail.steps.filter((step) => step.state === 'completed');
+  const planner = completed.filter((step) => step.agent === 'planner').at(-1);
+  const parse = (step) => {
+    try {
+      return JSON.parse(step.output_json ?? 'null');
+    } catch {
+      return null;
+    }
+  };
+  const output = planner ? parse(planner) : null;
+  return {
+    raw_planner_blocks: Array.isArray(output?.blocks) ? output.blocks.length : null,
+    retained_reviewed_blocks: detail.result?.blocks?.length ?? null,
+    selected_for_commit: 0,
+    committed_blocks: 0,
+    warnings: completed.flatMap((step) => {
+      const value = parse(step);
+      return Array.isArray(value?.warnings) &&
+        value.warnings.length <= 30 &&
+        value.warnings.every((warning) => typeof warning === 'string' && warning.length <= 500)
+        ? [{ agent: step.agent, warnings: value.warnings }]
+        : [];
+    }),
+    warning_source:
+      'Only warnings from completed, server-schema-validated agent outputs for the selected public fixture; additionally checked as bounded string arrays.',
+  };
+}
+
 export async function main() {
   const began = Date.now();
   const artifactDir = resolve(root, 'artifacts/live-ai');
@@ -98,6 +180,8 @@ export async function main() {
     cleanup: 'not_needed',
     stages: [],
     metrics: null,
+    source_date_metrics: null,
+    planning: null,
     checks: {},
     error: null,
   };
@@ -243,6 +327,7 @@ export async function main() {
     }
   };
   try {
+    report.public_fixture = selectFixture(process.env.STUDENTOS_LIVE_FIXTURE);
     if (process.env.FREE_PLAN_CONFIRMED !== 'true')
       throw new Error('WORKERS_FREE_CONFIRMATION_REQUIRED');
     if (
@@ -395,37 +480,72 @@ export async function main() {
     if (!report.checks.four_real_agent_roles)
       throw new Error('FOUR_COMPLETED_REAL_AGENT_ROLES_REQUIRED');
     report.metrics = goldMetrics(detail.result.proposals, fixture.gold);
+    report.source_date_metrics = sourceDateMetrics(detail.result.proposals, fixture.gold);
+    report.planning = planningSummary(detail);
+    const expectedDates = new Set(
+      fixture.gold.filter((item) => item.due_date).map((item) => item.due_date),
+    );
+    report.checks.no_invented_fixture_dates = detail.result.proposals.every(
+      (proposal) => !proposal.due_date || expectedDates.has(proposal.due_date),
+    );
+    report.checks.perfect_source_date_explicit_precision_recall =
+      report.source_date_metrics.explicit_dates.precision === 1 &&
+      report.source_date_metrics.explicit_dates.recall === 1;
     const accepted = new Set(detail.result.review.accepted_ids);
     const proposals = detail.result.proposals.filter(
       (proposal) =>
         accepted.has(proposal.id) && proposal.due_date && !proposal.requires_confirmation,
     );
-    if (!proposals.length) throw new Error('NO_REVIEW_ACCEPTED_DATED_PROPOSALS');
-    // Acceptance does not alter model answers or silently mark ambiguous dates as confirmed.
-    const selected = new Set(proposals.map((proposal) => proposal.id));
-    const blocks = detail.result.blocks.filter((block) => selected.has(block.proposal_id));
-    const committed = await api(`/runs/${runId}/approve`, 'POST', { proposals, blocks });
-    if (committed.run.state !== 'committed') throw new Error('APPROVAL_NOT_COMMITTED');
-    detail = committed;
-    const [remoteRows] = await query(
-      `SELECT (SELECT count(*) FROM tasks WHERE user_id=? AND document_id=?) AS tasks,(SELECT count(*) FROM calendar_events WHERE user_id=? AND document_id=?) AS events,(SELECT count(*) FROM agent_steps WHERE user_id=? AND run_id=? AND state='completed') AS completed_steps,(SELECT count(*) FROM analysis_results WHERE user_id=? AND run_id=? AND approved_at IS NOT NULL) AS approved_results`,
-      [USER, documentId, USER, documentId, USER, runId, USER, runId],
-    );
-    report.remote_rows = remoteRows;
-    report.checks.remote_d1_committed =
-      remoteRows.tasks === proposals.length &&
-      remoteRows.events >= proposals.length &&
-      remoteRows.completed_steps >= 4 &&
-      remoteRows.approved_results === 1;
-    report.checks.perfect_fixture_deadline_date_precision_recall =
-      report.metrics.precision === 1 && report.metrics.recall === 1;
-    report.checks.refresh_retains_committed =
-      (await api(`/runs/${runId}`)).run.state === 'committed';
-    if (!report.checks.remote_d1_committed || !report.checks.refresh_retains_committed)
-      throw new Error('REMOTE_D1_PERSISTENCE_MISMATCH');
-    report.status = report.checks.perfect_fixture_deadline_date_precision_recall
-      ? 'passed'
-      : 'partial_extraction';
+    const ambiguous = report.public_fixture.endsWith('syllabus-ambiguous.json');
+    if (ambiguous) {
+      report.checks.approval_intentionally_skipped_for_ambiguous_fixture = true;
+      const [rows] = await query(
+        `SELECT (SELECT count(*) FROM tasks WHERE user_id=? AND document_id=?) AS tasks,(SELECT count(*) FROM calendar_events WHERE user_id=? AND document_id=?) AS events,(SELECT count(*) FROM analysis_results WHERE user_id=? AND run_id=? AND approved_at IS NOT NULL) AS approved_results`,
+        [USER, documentId, USER, documentId, USER, runId],
+      );
+      report.remote_rows = rows;
+      report.checks.no_ambiguous_data_committed =
+        rows.tasks === 0 && rows.events === 0 && rows.approved_results === 0;
+      if (!report.checks.no_ambiguous_data_committed)
+        throw new Error('AMBIGUOUS_FIXTURE_COMMITTED_DATA');
+      report.status =
+        report.checks.no_invented_fixture_dates &&
+        report.checks.perfect_source_date_explicit_precision_recall
+          ? 'passed'
+          : 'partial_extraction';
+    } else {
+      if (!proposals.length) throw new Error('NO_REVIEW_ACCEPTED_DATED_PROPOSALS');
+      // Acceptance does not alter model answers or silently mark ambiguous dates as confirmed.
+      const selected = new Set(proposals.map((proposal) => proposal.id));
+      const blocks = detail.result.blocks.filter((block) => selected.has(block.proposal_id));
+      report.planning.selected_for_commit = blocks.length;
+      const committed = await api(`/runs/${runId}/approve`, 'POST', { proposals, blocks });
+      if (committed.run.state !== 'committed') throw new Error('APPROVAL_NOT_COMMITTED');
+      detail = committed;
+      const [remoteRows] = await query(
+        `SELECT (SELECT count(*) FROM tasks WHERE user_id=? AND document_id=?) AS tasks,(SELECT count(*) FROM calendar_events WHERE user_id=? AND document_id=?) AS events,(SELECT count(*) FROM agent_steps WHERE user_id=? AND run_id=? AND state='completed') AS completed_steps,(SELECT count(*) FROM analysis_results WHERE user_id=? AND run_id=? AND approved_at IS NOT NULL) AS approved_results`,
+        [USER, documentId, USER, documentId, USER, runId, USER, runId],
+      );
+      report.remote_rows = remoteRows;
+      report.planning.committed_blocks = remoteRows.events - proposals.length;
+      report.checks.remote_d1_committed =
+        remoteRows.tasks === proposals.length &&
+        remoteRows.events >= proposals.length &&
+        remoteRows.completed_steps >= 4 &&
+        remoteRows.approved_results === 1;
+      report.checks.perfect_fixture_deadline_date_precision_recall =
+        report.metrics.precision === 1 && report.metrics.recall === 1;
+      report.checks.refresh_retains_committed =
+        (await api(`/runs/${runId}`)).run.state === 'committed';
+      if (!report.checks.remote_d1_committed || !report.checks.refresh_retains_committed)
+        throw new Error('REMOTE_D1_PERSISTENCE_MISMATCH');
+      report.status =
+        report.checks.perfect_fixture_deadline_date_precision_recall &&
+        report.checks.perfect_source_date_explicit_precision_recall &&
+        report.checks.no_invented_fixture_dates
+          ? 'passed'
+          : 'partial_extraction';
+    }
   } catch (error) {
     // Error codes/messages are ours; never serialize raw provider responses or hidden model reasoning.
     report.error =
