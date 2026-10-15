@@ -1,6 +1,6 @@
 # Bezpieczna kontynuacja StudentOS
 
-Checkpoint 15.10.2026 po integracji i lokalnym QA. Repozytorium: https://github.com/recytator/student-os. Projekt znajduje się w `/workspace/student-os`; nie inicjalizuj go ponownie.
+Checkpoint 15.10.2026 po integracji, lokalnym QA i udanym GitHub Actions CI. Kod implementacji zapisano na main w commicie `7c96aa1`; [CI zakończone success](https://github.com/recytator/student-os/actions/runs/38737400553). Repozytorium: https://github.com/recytator/student-os. Projekt znajduje się w `/workspace/student-os`; nie inicjalizuj go ponownie.
 
 ## Co jest sprawdzone
 
