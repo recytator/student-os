@@ -29,7 +29,124 @@ import {
 } from './agents';
 import { HttpError, json, readJson, type Env, type User } from './types';
 
-const VERSION = 'v1';
+export interface ReviewIdReconciliation {
+  unknown_ids: string[];
+  duplicate_ids: string[];
+  conflicting_ids: string[];
+  omitted_ids: string[];
+  independently_rejected_ids: string[];
+}
+
+/** A missing or ambiguous model decision is always rejection, never implicit approval. */
+export function reconcileReviewIds(
+  modelReview: ReviewAgentOutput,
+  proposalIds: readonly string[],
+  independentlyAccepted: ReadonlySet<string>,
+): { review: ReviewAgentOutput; reconciliation: ReviewIdReconciliation } {
+  const known = new Set(proposalIds);
+  const acceptedCounts = new Map<string, number>();
+  const rejectedCounts = new Map<string, number>();
+  for (const proposalId of modelReview.accepted_ids)
+    acceptedCounts.set(proposalId, (acceptedCounts.get(proposalId) || 0) + 1);
+  for (const proposalId of modelReview.rejected_ids)
+    rejectedCounts.set(proposalId, (rejectedCounts.get(proposalId) || 0) + 1);
+  const mentioned = new Set([...acceptedCounts.keys(), ...rejectedCounts.keys()]);
+  const reconciliation: ReviewIdReconciliation = {
+    unknown_ids: [...mentioned].filter((proposalId) => !known.has(proposalId)),
+    duplicate_ids: [...mentioned].filter(
+      (proposalId) =>
+        (acceptedCounts.get(proposalId) || 0) > 1 || (rejectedCounts.get(proposalId) || 0) > 1,
+    ),
+    conflicting_ids: [...known].filter(
+      (proposalId) => acceptedCounts.has(proposalId) && rejectedCounts.has(proposalId),
+    ),
+    omitted_ids: [...known].filter((proposalId) => !mentioned.has(proposalId)),
+    independently_rejected_ids: [...known].filter(
+      (proposalId) =>
+        acceptedCounts.get(proposalId) === 1 &&
+        !rejectedCounts.has(proposalId) &&
+        !independentlyAccepted.has(proposalId),
+    ),
+  };
+  const accepted = [...known].filter(
+    (proposalId) =>
+      acceptedCounts.get(proposalId) === 1 &&
+      !rejectedCounts.has(proposalId) &&
+      independentlyAccepted.has(proposalId),
+  );
+  const acceptedSet = new Set(accepted);
+  const issues: ReviewAgentOutput['issues'] = [];
+  const warn = (proposalId: string | null, message: string): void => {
+    issues.push({
+      proposal_id: proposalId,
+      severity: 'warning',
+      code: 'invalid_structure',
+      message,
+    });
+  };
+  if (reconciliation.unknown_ids.length)
+    warn(
+      null,
+      `ReviewAgent wskazał nieznane identyfikatory; zostały pominięte: ${reconciliation.unknown_ids.join(', ')}`.slice(
+        0,
+        800,
+      ),
+    );
+  for (const proposalId of reconciliation.duplicate_ids.filter((proposalId) =>
+    known.has(proposalId),
+  ))
+    warn(
+      proposalId,
+      'ReviewAgent powtórzył identyfikator. Propozycja została zachowawczo odrzucona.',
+    );
+  for (const proposalId of reconciliation.conflicting_ids)
+    warn(
+      proposalId,
+      'ReviewAgent jednocześnie zaakceptował i odrzucił propozycję. Zastosowano odrzucenie.',
+    );
+  for (const proposalId of reconciliation.omitted_ids)
+    warn(
+      proposalId,
+      'ReviewAgent nie wydał decyzji o tej propozycji. Nie uznano jej za zaakceptowaną.',
+    );
+  for (const proposalId of reconciliation.independently_rejected_ids)
+    issues.push({
+      proposal_id: proposalId,
+      severity: 'warning',
+      code: 'other',
+      message: 'Niezależny walidator odrzucił propozycję pomimo zgody ReviewAgent.',
+    });
+  const repaired =
+    reconciliation.unknown_ids.length +
+      reconciliation.duplicate_ids.length +
+      reconciliation.conflicting_ids.length +
+      reconciliation.omitted_ids.length >
+    0;
+  return {
+    review: {
+      ...modelReview,
+      accepted_ids: accepted,
+      rejected_ids: [...known].filter((proposalId) => !acceptedSet.has(proposalId)),
+      issues: [...issues, ...modelReview.issues].slice(0, 100),
+      summary: repaired
+        ? `Zachowawczo uzgodniono decyzje ReviewAgent: ${accepted.length} zaakceptowanych, ${known.size - accepted.length} odrzuconych. ${modelReview.summary}`.slice(
+            0,
+            2000,
+          )
+        : modelReview.summary,
+    },
+    reconciliation,
+  };
+}
+
+const VERSION = 'v2';
+class WorkflowValidationError extends Error {
+  constructor(
+    public readonly validationCode: 'DOCUMENT_SOURCE' | 'DEADLINE_SOURCE' | 'VALIDATION',
+  ) {
+    super(validationCode);
+  }
+}
 const MAX_CALLS = 12;
 const MODELS = ['@cf/zai-org/glm-4.7-flash', '@cf/google/gemma-4-26b-a4b-it'];
 interface DocumentRecord {
@@ -283,22 +400,26 @@ export async function startRun(env: Env, userId: string, documentId: string, for
   }
   return { run: (await runDetail(env, userId, runId)).run, cached: false };
 }
+const availabilityFormatter = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/Warsaw',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  weekday: 'short',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
 export function blockFitsAvailability(
   block: StudyBlock,
   preferences: Preferences,
   schedules: ClassSchedule[],
 ): boolean {
   const local = (value: string) => {
-    const parts = new Intl.DateTimeFormat('en-GB', {
-      timeZone: 'Europe/Warsaw',
-      weekday: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      hourCycle: 'h23',
-    }).formatToParts(new Date(value));
+    const parts = availabilityFormatter.formatToParts(new Date(value));
     const part = (type: string) => parts.find((p) => p.type === type)?.value || '';
     return {
-      date: warsawDate(value),
+      date: `${part('year')}-${part('month')}-${part('day')}`,
       time: `${part('hour')}:${part('minute')}`,
       weekday: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].indexOf(part('weekday')) + 1,
     };
@@ -459,7 +580,7 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
           section.sources.every((source) => hasEvidence(pages, source)),
         )
       )
-        throw new Error('DocumentAgent zwrócił cytat nieobecny w dokumencie.');
+        throw new WorkflowValidationError('DOCUMENT_SOURCE');
       context.documents.push(value);
       context.chunk++;
       if (context.chunk >= chunks.length) {
@@ -470,7 +591,7 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
       const value = output as { proposals: ProposedTask[]; warnings: string[] };
       for (const proposal of value.proposals) {
         if (!proposal.sources.every((source) => hasEvidence(pages, source)))
-          throw new Error('DeadlineAgent zwrócił niepotwierdzone źródło.');
+          throw new WorkflowValidationError('DEADLINE_SOURCE');
         proposal.id = `p${context.chunk}-${context.proposals.length}`;
         proposal.subject_id = document.subject_id;
         if (proposal.due_date && !dateInEvidence(proposal.due_date, proposal.sources)) {
@@ -489,25 +610,29 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
       }
     } else if (run.state === 'planner') {
       const value = output as { blocks: StudyBlock[]; warnings: string[] };
-      context.blocks = value.blocks.filter((block) =>
-        blockFitsAvailability(block, preferences, records.schedules),
-      );
+      const availability = value.blocks.map((block) => ({
+        block,
+        fits: blockFitsAvailability(block, preferences, records.schedules),
+      }));
+      context.blocks = availability.filter((item) => item.fits).map((item) => item.block);
       if (context.blocks.length !== value.blocks.length)
         context.warnings.push(
           'Walidator odrzucił bloki poza dostępnością lub kolidujące z zajęciami.',
         );
       context.warnings.push(...value.warnings);
+      const rejected = availability.filter((item) => !item.fits).map((item) => item.block);
+      validation = {
+        schema: 'passed',
+        proposed_blocks: value.blocks.length,
+        retained_blocks: context.blocks.length,
+        rejected_ids: rejected.map((block) => block.id),
+        rejected_blocks: rejected.map((block) => ({
+          id: block.id,
+          reason: 'outside_availability_or_class_conflict',
+        })),
+      };
       nextState = 'review';
     } else {
-      const value = output as ReviewAgentOutput;
-      const proposalIds = new Set(context.proposals.map((p) => p.id));
-      const allIds = [...value.accepted_ids, ...value.rejected_ids];
-      if (
-        allIds.length !== proposalIds.size ||
-        new Set(allIds).size !== proposalIds.size ||
-        allIds.some((p) => !proposalIds.has(p))
-      )
-        throw new Error('ReviewAgent nie zweryfikował wszystkich propozycji dokładnie raz.');
       const independent = independentReview(
         pages,
         context.proposals,
@@ -519,9 +644,10 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
       const accepted = new Set(
         independent.decisions.filter((d) => d.accepted).map((d) => d.proposalId),
       );
-      value.accepted_ids = value.accepted_ids.filter((proposalId) => accepted.has(proposalId));
-      value.rejected_ids = [...proposalIds].filter(
-        (proposalId) => !value.accepted_ids.includes(proposalId),
+      const { review: value, reconciliation } = reconcileReviewIds(
+        output as ReviewAgentOutput,
+        context.proposals.map((proposal) => proposal.id),
+        accepted,
       );
       for (const decision of independent.decisions)
         for (const message of decision.reasons)
@@ -536,8 +662,16 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
       context.blocks = independent.blocks.filter((block) =>
         value.accepted_ids.includes(block.proposal_id),
       );
+      value.issues = value.issues.slice(0, 100);
       context.review = value;
-      validation = independent;
+      validation = {
+        ...independent,
+        original_model_ids: {
+          accepted_ids: [...(output as ReviewAgentOutput).accepted_ids],
+          rejected_ids: [...(output as ReviewAgentOutput).rejected_ids],
+        },
+        review_id_reconciliation: reconciliation,
+      };
       if (
         value.needs_revision &&
         value.revise_agent === 'planner' &&
@@ -622,6 +756,16 @@ export async function advanceRun(env: Env, userId: string, runId: string) {
         message,
         JSON.stringify({
           schema: 'failed',
+          validation_code:
+            error instanceof WorkflowValidationError
+              ? error.validationCode
+              : error instanceof AgentProviderError
+                ? error.kind
+                : error instanceof z.ZodError
+                  ? 'SCHEMA'
+                  : error instanceof SyntaxError
+                    ? 'JSON'
+                    : 'VALIDATION',
           category:
             error instanceof z.ZodError
               ? 'schema'

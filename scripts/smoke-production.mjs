@@ -47,6 +47,7 @@ if (process.env.OAUTH_CONFIGURED === 'true') {
     redirect.searchParams.get('redirect_uri') !== base + '/api/auth/callback' ||
     redirect.searchParams.get('code_challenge_method') !== 'S256' ||
     !redirect.searchParams.get('client_id') ||
+    redirect.searchParams.get('client_id') !== redirect.searchParams.get('client_id').trim() ||
     redirect.searchParams.has('client_secret') ||
     !stateCookie.includes('HttpOnly') ||
     !stateCookie.includes('Secure') ||
