@@ -50,14 +50,14 @@ if (
 console.log(JSON.stringify({ timetable: 'verified_in_production_D1', ...imported }));
 const [candidate] = await cf(
   `SELECT r.id,r.calls FROM agent_runs r
-  WHERE r.user_id=? AND r.state='document' AND r.calls<12
+  WHERE r.user_id=? AND r.state IN ('document','deadline') AND r.calls<12
     AND r.rowid=(SELECT max(newer.rowid) FROM agent_runs newer WHERE newer.user_id=r.user_id)
     AND EXISTS(SELECT 1 FROM agent_steps step,json_each(step.validation_json,'$.issues') issue
-      WHERE step.run_id=r.id AND step.agent='document' AND step.state='failed'
+      WHERE step.run_id=r.id AND step.agent=r.state AND step.state='failed'
         AND step.rowid=(SELECT max(last_step.rowid) FROM agent_steps last_step WHERE last_step.run_id=r.id)
         AND json_extract(step.validation_json,'$.validation_code')='SCHEMA'
         AND json_extract(issue.value,'$.code')='too_big'
-        AND json_extract(issue.value,'$.path[0]')='sections'
+        AND json_extract(issue.value,'$.path[0]') IN ('sections','proposals')
         AND json_extract(issue.value,'$.path[2]')='sources')`,
   [owner.id],
 );
@@ -106,8 +106,19 @@ if (!candidate) {
         }),
       );
     }
-    if (detail.run.state !== 'approval' && detail.run.state !== 'committed')
+    if (detail.run.state !== 'approval' && detail.run.state !== 'committed') {
+      const last = detail.steps.at(-1);
+      const validation = JSON.parse(last?.validation_json || '{}');
+      console.log(
+        JSON.stringify({
+          document_repair: 'validation_diagnostic',
+          agent: last?.agent,
+          validation_code: validation.validation_code,
+          issues: validation.issues?.map(({ path, code }) => ({ path, code })),
+        }),
+      );
       throw new Error('REPAIRED_ANALYSIS_NOT_COMPLETE');
+    }
     console.log(
       JSON.stringify({
         document_repair: 'ready_for_owner_review',

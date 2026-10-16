@@ -4,6 +4,7 @@ import {
   resolveEvidenceReferences,
   callAgent,
   hasEvidence,
+  AGENT_RESPONSE_SCHEMAS,
 } from '../../worker/agents';
 import { documentAgentOutputSchema, deadlineAgentOutputSchema } from '../../shared/contracts';
 
@@ -32,6 +33,44 @@ const proposal = {
 };
 
 describe('Trusted source reference transport — provider deliberately mocked', () => {
+  it('constrains generated references and nullable duplicate identity at the provider boundary', async () => {
+    const run = vi.fn().mockResolvedValue({ response: JSON.stringify(documentOutput) });
+    await callAgent({ run }, '@cf/zai-org/glm-4.7-flash', 'DocumentAgent', {
+      name: 'Test',
+      pages,
+      academic_year: '2026/2027',
+      subject_name: null,
+    });
+    expect(run.mock.calls[0]![1].response_format).toEqual({
+      type: 'json_schema',
+      json_schema: {
+        name: 'DocumentAgent',
+        strict: true,
+        schema: AGENT_RESPONSE_SCHEMAS.DocumentAgent,
+      },
+    });
+    const schema = AGENT_RESPONSE_SCHEMAS.DeadlineAgent as {
+      properties: {
+        proposals: {
+          items: {
+            required: string[];
+            properties: {
+              sources: {
+                maxItems: number;
+                items: { required: string[]; additionalProperties: boolean };
+              };
+            };
+          };
+        };
+      };
+    };
+    expect(schema.properties.proposals.items.required).toContain('duplicate_of');
+    expect(schema.properties.proposals.items.properties.sources.maxItems).toBe(3);
+    expect(schema.properties.proposals.items.properties.sources.items.required).toEqual(['ref_id']);
+    expect(schema.properties.proposals.items.properties.sources.items.additionalProperties).toBe(
+      false,
+    );
+  });
   it('round-trips every literal character and preserves page numbers and logical boundaries', () => {
     const catalog = buildEvidenceCatalog(pages);
     expect(catalog[0]).toEqual({

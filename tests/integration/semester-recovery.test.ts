@@ -178,3 +178,71 @@ it('recovers only the latest matching failure once, preserves budgets and advanc
     await runtime.dispose();
   }
 }, 30_000);
+
+it('recovers the matching deadline failure without repeating document extraction or resetting usage', async () => {
+  const { runtime, db } = await localDatabase('deadline-schema-recovery');
+  try {
+    await db.prepare("INSERT INTO users(id,github_id) VALUES('owner','1')").run();
+    await db
+      .prepare(
+        "INSERT INTO documents(id,user_id,name,hash,academic_year,page_count,text_length) VALUES('doc','owner','Test',?,'2026/2027',1,20)",
+      )
+      .bind('a'.repeat(64))
+      .run();
+    const context = {
+      chunk: 0,
+      documents: [
+        {
+          subject_name: null,
+          document_type: 'other',
+          summary: 'Zapisany etap',
+          sections: [],
+          warnings: [],
+        },
+      ],
+      proposals: [],
+      blocks: [],
+      warnings: [],
+      review: null,
+      revision: 0,
+      source_groups_recovery: 1,
+    };
+    await db
+      .prepare(
+        "INSERT INTO agent_runs(id,user_id,document_id,state,context_json,model,calls,retries) VALUES('run','owner','doc','failed',?,'@cf/zai-org/glm-4.7-flash',5,2)",
+      )
+      .bind(JSON.stringify(context))
+      .run();
+    await db
+      .prepare(
+        "INSERT INTO agent_steps(id,run_id,user_id,agent,state,started_at,validation_json) VALUES('step','run','owner','deadline','failed','2026-10-16',?)",
+      )
+      .bind(
+        JSON.stringify({
+          validation_code: 'SCHEMA',
+          issues: [{ path: ['proposals', 0, 'sources'], code: 'too_big' }],
+        }),
+      )
+      .run();
+    await db
+      .prepare("INSERT INTO ai_usage(user_id,day,analyses,calls) VALUES('owner','2026-10-16',4,12)")
+      .run();
+    await migration(db, '0006_recover_deadline_source_failures.sql');
+    const run = await db
+      .prepare("SELECT state,calls,retries,context_json FROM agent_runs WHERE id='run'")
+      .first<{ state: string; calls: number; retries: number; context_json: string }>();
+    expect(run).toMatchObject({ state: 'deadline', calls: 5, retries: 0 });
+    expect(JSON.parse(run!.context_json)).toEqual({ ...context, deadline_schema_recovery: 1 });
+    expect(await db.prepare('SELECT analyses,calls FROM ai_usage').first()).toEqual({
+      analyses: 4,
+      calls: 12,
+    });
+    await db.prepare("UPDATE agent_runs SET state='failed' WHERE id='run'").run();
+    await migration(db, '0006_recover_deadline_source_failures.sql');
+    expect(await db.prepare("SELECT state FROM agent_runs WHERE id='run'").first()).toEqual({
+      state: 'failed',
+    });
+  } finally {
+    await runtime.dispose();
+  }
+}, 30_000);

@@ -148,6 +148,7 @@ describe('Wrangler SQL splitter + D1 — semantyka triggerów po poprawce transp
       { name: '0003_task_calendar_links.sql' },
       { name: '0004_semester_timetable.sql' },
       { name: '0005_recover_source_limit_failures.sql' },
+      { name: '0006_recover_deadline_source_failures.sql' },
     ]);
   });
 });
