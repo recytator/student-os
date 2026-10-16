@@ -34,6 +34,7 @@ import {
 import { api, ApiError, json } from './api';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Button } from './components/ui/button';
+import { SemesterTimetable, type SemesterTimetableData } from './components/SemesterTimetable';
 import type {
   Subject as SubjectRecord,
   Task as TaskRecord,
@@ -81,6 +82,7 @@ type Bootstrap = {
   tasks: Task[];
   events: Event[];
   schedules: Schedule[];
+  timetables?: SemesterTimetableData[];
   documents: Document[];
   runs: Run[];
   preferences: Preferences;
@@ -1764,6 +1766,9 @@ function Calendar({ data, subject, mutate, remove, busy, notify }: SharedProps) 
           )}
         </section>
       )}
+      {data.timetables?.map((timetable) => (
+        <SemesterTimetable key={timetable.id} timetable={timetable} />
+      ))}
       <div className="calendar-toolbar">
         <div className="date-navigation">
           <button className="icon-button" aria-label="Poprzedni okres" onClick={() => move(-1)}>

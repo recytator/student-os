@@ -52,6 +52,8 @@ jobs:
           APP_URL: ${{ steps.prepare.outputs.app_url }}
           OAUTH_CONFIGURED: ${{ steps.oauth.outputs.oauth_configured }}
         run: node scripts/smoke-production.mjs
+      - name: Verify imported timetable and continue the latest analysis stopped by the repaired defect
+        run: node scripts/verify-document-repair.mjs
   live-ai-acceptance:
     needs: deploy
     runs-on: ubuntu-latest

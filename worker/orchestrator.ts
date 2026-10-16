@@ -139,7 +139,7 @@ export function reconcileReviewIds(
   };
 }
 
-const VERSION = 'v2';
+const VERSION = 'v3-source-groups';
 class WorkflowValidationError extends Error {
   constructor(
     public readonly validationCode: 'DOCUMENT_SOURCE' | 'DEADLINE_SOURCE' | 'VALIDATION',

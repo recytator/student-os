@@ -4,6 +4,22 @@ import { fileURLToPath } from 'node:url';
 const fixture = (name: string) => fileURLToPath(new URL(`../fixtures/${name}`, import.meta.url));
 
 test.describe('StudentOS — prawdziwy interfejs i lokalne dane', () => {
+  test('wgrany plan GL2 zachowuje godziny i ograniczenia tygodni po odświeżeniu', async ({
+    page,
+  }) => {
+    await page.goto('/#calendar');
+    const plan = page.getByRole('region', { name: 'Wgrany plan semestru' });
+    await expect(plan).toBeVisible();
+    await expect(plan.getByText('GI1 / GL2', { exact: true })).toBeVisible();
+    await expect(plan.getByText('17:00–19:45 · GL2', { exact: true })).toBeVisible();
+    await expect(plan.getByText('10 spotkań, od 10.11.2026', { exact: true })).toBeVisible();
+    await expect(plan.getByText('GL1', { exact: true })).toHaveCount(0);
+    expect(
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth + 1),
+    ).toBe(true);
+    await page.reload();
+    await expect(plan.getByText('GI1 / GL2', { exact: true })).toBeVisible();
+  });
   test.afterEach(async ({ request }) => {
     const response = await request.get('/api/bootstrap');
     if (!response.ok()) return;

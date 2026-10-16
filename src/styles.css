@@ -4821,3 +4821,67 @@ blockquote > span {
     min-height: 18px;
   }
 }
+/* The supplied semester reference keeps its partial-week notes visible on phones. */
+.semester-timetable {
+  margin-bottom: 24px;
+}
+.semester-timetable .panel-heading {
+  align-items: flex-start;
+  gap: 12px;
+}
+.semester-timetable .panel-heading p {
+  color: var(--subtle);
+  margin: 8px 0 0;
+  font-size: 13px;
+}
+.timetable-context {
+  padding: 0 20px;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--subtle);
+}
+.timetable-days {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  padding: 16px 20px;
+}
+.timetable-day {
+  min-width: 0;
+}
+.timetable-day h3 {
+  font-size: 14px;
+  margin: 0 0 12px;
+}
+.timetable-class {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  margin-bottom: 10px;
+  border: 1px solid var(--line);
+  border-left: 3px solid #a79ce8;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.timetable-class strong {
+  font-size: 13px;
+}
+.timetable-class small {
+  color: var(--subtle);
+  font-size: 12px;
+}
+.semester-timetable details {
+  padding-bottom: 20px;
+}
+@media (max-width: 1100px) {
+  .timetable-days {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 600px) {
+  .timetable-days {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}

@@ -97,6 +97,42 @@ describe('Trusted source reference transport — provider deliberately mocked', 
       resolveEvidenceReferences('DocumentAgent', documentOutput, [catalog[0]!, catalog[0]!]),
     ).toThrow();
   });
+  it('preserves more than 20 validated sources by grouping sections and removes duplicate citations', () => {
+    const input = [
+      { page: 1, text: Array.from({ length: 45 }, (_, i) => `Źródło numer ${i}.\n`).join('') },
+    ];
+    const catalog = buildEvidenceCatalog(input);
+    const sources = catalog.map(({ id }) => ({ ref_id: id }));
+    const result = documentAgentOutputSchema.parse(
+      resolveEvidenceReferences(
+        'DocumentAgent',
+        {
+          ...documentOutput,
+          sections: [{ ...documentOutput.sections[0], sources: [...sources, sources[0]] }],
+        },
+        catalog,
+      ),
+    );
+    expect(result.sections.map((section) => section.sources.length)).toEqual([20, 20, 5]);
+    expect(result.sections.flatMap((section) => section.sources)).toEqual(
+      catalog.map(({ page, quote }) => ({ page, quote })),
+    );
+    expect(
+      result.sections.every((section) =>
+        section.sources.every((source) => hasEvidence(input, source)),
+      ),
+    ).toBe(true);
+    expect(() =>
+      resolveEvidenceReferences(
+        'DocumentAgent',
+        {
+          ...documentOutput,
+          sections: [{ ...documentOutput.sections[0], sources: [...sources, { ref_id: 's999' }] }],
+        },
+        catalog,
+      ),
+    ).toThrow('Nieznane');
+  });
   it('keeps legacy source compatibility while retaining strict output validation', () => {
     const source = { page: 1, quote: 'Projekt: oddanie raportu do 20.11.2026.' };
     const result = documentAgentOutputSchema.parse(
@@ -157,6 +193,7 @@ describe('Trusted source reference transport — provider deliberately mocked', 
     const data = JSON.parse(request.messages[1]!.content).data;
     expect(data).not.toHaveProperty('pages');
     expect(data.evidence_catalog).toEqual(buildEvidenceCatalog(pages));
+    expect(data.document.sections[0].sources).toEqual([{ ref_id: 's0' }]);
     expect(deadlineAgentOutputSchema.parse(result.output).proposals[0]!.sources[0]).toEqual({
       page: 1,
       quote: buildEvidenceCatalog(pages)[0]!.quote,
@@ -174,5 +211,42 @@ describe('Trusted source reference transport — provider deliberately mocked', 
       }),
     ).rejects.toThrow('budżet');
     expect(run).not.toHaveBeenCalled();
+  });
+  it('keeps large hydrated document sections within the next stage input budget without dropping evidence', async () => {
+    const input = [
+      {
+        page: 1,
+        text: Array.from({ length: 40 }, (_, i) => `Linia ${i}: ${'x'.repeat(680)}\n`).join(''),
+      },
+    ];
+    const catalog = buildEvidenceCatalog(input);
+    const sources = catalog.map(({ id }) => ({ ref_id: id }));
+    const document = documentAgentOutputSchema.parse(
+      resolveEvidenceReferences(
+        'DocumentAgent',
+        {
+          ...documentOutput,
+          sections: [0, 1].map(() => ({ ...documentOutput.sections[0], sources })),
+        },
+        catalog,
+      ),
+    );
+    const run = vi
+      .fn()
+      .mockResolvedValue({ response: JSON.stringify({ proposals: [], warnings: [] }) });
+    await callAgent({ run }, '@cf/zai-org/glm-4.7-flash', 'DeadlineAgent', {
+      document,
+      pages: input,
+      academic_year: '2026/2027',
+      today: '2026-10-16',
+      existing_tasks: [],
+    });
+    const content = run.mock.calls[0]![1].messages[1].content as string;
+    expect(content.length).toBeLessThan(64_000);
+    const data = JSON.parse(content).data;
+    expect(
+      data.document.sections.flatMap((section: { sources: unknown[] }) => section.sources),
+    ).toHaveLength(80);
+    expect(data.evidence_catalog).toEqual(catalog);
   });
 });

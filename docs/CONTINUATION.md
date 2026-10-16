@@ -33,3 +33,7 @@ Rdzeń jest wdrożony i sprawdzony przez produkcyjne HTTPS; zwykłe korzystanie 
 Dokładnego CPU w ms i neurons nie zmierzono. Przetestowany zestaw z AI wykonał się poprawnie na produkcyjnym Workers Free, co potwierdza wykonalność tej próbki; nie gwarantuje zmieszczenia każdego dużego PDF w limitach. Nie ma OCR, CRUD offline ani automatycznego przeliczenia bloków po zmianie terminu.
 
 Kontynuuj od rzeczywistego problemu lub kolejnego odbioru, bez powtarzania zakończonych testów dla samego powtórzenia. Czytaj [TEST_REPORT.md](TEST_REPORT.md), [ACCEPTANCE.md](ACCEPTANCE.md), [LIVE_TESTING.md](LIVE_TESTING.md) i [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md). Nie commituj plików podczas edycji przez innego agenta.
+
+## Aktualizacja 16.10.2026 — naprawa zgłoszona ze zdjęcia
+
+Przygotowano poprawkę limitu źródeł DocumentAgent i cache v3, migrację 0005 wznawiającą wyłącznie dopasowane przerwane analizy oraz migrację 0004 importującą plan GI1/GL2 właściciela. Plan w Kalendarzu jest transkrypcją z oznaczonymi nieznanymi tygodniami, nie cyklem potwierdzonych dat; nie jest jeszcze podstawą zajętości planera AI. Właściciel podał początek 04.10.2026, nie podał końca. Szczegóły i ograniczenia: końcowy wpis [DEVELOPMENT_LOG.md](DEVELOPMENT_LOG.md). Nie powtarzaj migracji jako ręcznego importu i nie uruchamiaj kolejnych analiz publicznego fixture bez potrzeby. Wynik wdrożenia zostanie odnotowany po jego wykonaniu.

@@ -129,3 +129,7 @@ Do wykonania: odbiór na fizycznym Androidzie, instalacja PWA, dane po ponownym 
 ## Wdrożenie limitu 4 analiz
 
 Pełny lokalny zestaw po zmianie: **128/128 PASS**, 15 plików, 24,18 s; lint i build PASS. Commit `5b0d01c` wdrożył limit 4 analiz dziennie, zachowując 24 wywołania i wcześniejsze rezerwacje. [Przebieg 38787614257](https://github.com/recytator/student-os/actions/runs/38787614257), zadanie deploy `116603572484`: **SUCCESS**. Druga próba produkcyjnego odbioru w `38787061192` przeszła z rzeczywistym AI. [CI 38787611794](https://github.com/recytator/student-os/actions/runs/38787611794) dla `5b0d01c` również zakończyło się sukcesem, obejmując 128 testów unit/integration oraz 12 E2E. Dostępny budżet sprawdzamy świeżym odczytem serwera.
+
+## 16.10.2026 — regresja limitu źródeł i plan GL2
+
+Lokalnie **132/132 unit/integration PASS** (16 plików), **14/14 E2E PASS** (Chromium mobilny 390 px i desktop 1440 px), lint/format/build/typecheck PASS, pakowanie Workera dry-run PASS. Nowe testy: 35 i 45 referencji w sekcji bez utraty źródeł; nieznane ID nadal odrzucone; brak duplikowania dużych cytatów w następnym etapie; jednokrotna naprawa dopasowanego runu bez resetu ai_usage; import planu tylko dla jego właściciela, eksport, usuwanie i trwałość po odświeżeniu. Wynik rzeczywistego wdrożenia oraz kontynuacji dokumentu będzie odnotowany po ich wykonaniu. Testy kontrolowanego bindingu nadal nie są dowodem jakości prawdziwego modelu.

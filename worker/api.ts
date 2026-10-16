@@ -332,6 +332,10 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
   const resource = parts[1];
   const id = parts[2];
   if (resource === 'bootstrap' && request.method === 'GET') {
+    const timetables = (await list(env, user.id, 'semester_timetables')).map((record) => ({
+      id: record.id,
+      ...JSON.parse(String(record.data_json)),
+    }));
     const [subjects, tasks, events, schedules, documents, runs, prefs, subtasks] =
       await Promise.all([
         list(env, user.id, 'subjects'),
@@ -359,6 +363,7 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
       tasks,
       events,
       schedules,
+      timetables,
       documents,
       runs,
       preferences: prefs,
@@ -393,6 +398,7 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
       'subtasks',
       'calendar_events',
       'class_schedules',
+      'semester_timetables',
       'documents',
       'document_sections',
       'analysis_results',
@@ -441,6 +447,7 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
         'tasks',
         'calendar_events',
         'class_schedules',
+        'semester_timetables',
         'user_preferences',
       ].map((table) => env.DB.prepare(`DELETE FROM ${table} WHERE user_id=?`).bind(user.id)),
     );
