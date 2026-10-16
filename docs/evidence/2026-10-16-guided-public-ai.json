@@ -1,0 +1,109 @@
+{
+  "status": "passed",
+  "started_at": "2026-10-16T11:40:51.941Z",
+  "execution": "Actual StudentOS Worker executed on loopback using actual remote Cloudflare D1 and Workers AI bindings. OAuth/browser production login and production Workers Free CPU limits are not covered.",
+  "model": "@cf/zai-org/glm-4.7-flash",
+  "maximum_model_calls": 5,
+  "orchestrator_call_reservations": 4,
+  "public_fixture": "tests/fixtures/syllabus-exact.json",
+  "call_count_note": "Reservations counted by the orchestrator include failures; they are not a provider billing measurement.",
+  "completed_model_responses": 4,
+  "cleanup": "isolated_fixture_user_and_cascades_deleted",
+  "stages": [
+    {
+      "state": "deadline",
+      "calls": 1,
+      "retries": 0
+    },
+    {
+      "state": "planner",
+      "calls": 2,
+      "retries": 0
+    },
+    {
+      "state": "review",
+      "calls": 3,
+      "retries": 0
+    },
+    {
+      "state": "approval",
+      "calls": 4,
+      "retries": 0
+    }
+  ],
+  "metrics": {
+    "method": "Distinct explicit deadline dates compared with handwritten public fixture gold; does not score task-title semantics.",
+    "expected_distinct_dates": 4,
+    "found_distinct_dates": 4,
+    "matched_distinct_dates": 4,
+    "precision": 1,
+    "recall": 1,
+    "requires_manual_confirmation": 1
+  },
+  "source_date_metrics": {
+    "method": "Same one-to-one source/date matcher as tests/evaluate-extraction.mjs: exact date, page and overlapping normalized quote of at least 12 characters. Does not establish semantic task identity.",
+    "obligations": {
+      "true_positive": 5,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    },
+    "explicit_dates": {
+      "true_positive": 4,
+      "false_positive": 0,
+      "false_negative": 0,
+      "precision": 1,
+      "recall": 1,
+      "f1": 1
+    }
+  },
+  "planning": {
+    "raw_planner_blocks": 6,
+    "retained_reviewed_blocks": 5,
+    "selected_for_commit": 5,
+    "committed_blocks": 5,
+    "warnings": [
+      {
+        "agent": "document",
+        "warnings": []
+      },
+      {
+        "agent": "deadline",
+        "warnings": []
+      },
+      {
+        "agent": "planner",
+        "warnings": [
+          "Brak daty dla propozycji p0-0, planowanie na najbliższe dni robocze.",
+          "Brak daty dla propozycji p0-1, brak potwierdzenia.",
+          "Brak daty dla propozycji p0-3, brak daty.",
+          "Brak daty dla propozycji p0-4, brak daty."
+        ]
+      }
+    ],
+    "warning_source": "Only warnings from completed, server-schema-validated agent outputs for the selected public fixture; additionally checked as bounded string arrays."
+  },
+  "checks": {
+    "isolated_remote_user": true,
+    "four_real_agent_roles": true,
+    "no_invented_fixture_dates": true,
+    "perfect_source_date_explicit_precision_recall": true,
+    "remote_d1_committed": true,
+    "perfect_fixture_deadline_date_precision_recall": true,
+    "refresh_retains_committed": true
+  },
+  "error": null,
+  "remote_rows": {
+    "tasks": 4,
+    "events": 9,
+    "completed_steps": 4,
+    "approved_results": 1
+  },
+  "finished_at": "2026-10-16T11:42:19.985Z",
+  "duration_ms": 88044,
+  "workflow_run": "https://github.com/recytator/student-os/actions/runs/38895068198",
+  "job_id": 116954298048,
+  "source_commit": "08929cabc54bd3fc59f3c2e8ffaed378368c2026"
+}

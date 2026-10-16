@@ -1,0 +1,44 @@
+{
+  "date": "2026-10-16",
+  "origin": "https://studentos.recytator.workers.dev",
+  "source_commit": "08929cabc54bd3fc59f3c2e8ffaed378368c2026",
+  "deployment_run": "https://github.com/recytator/student-os/actions/runs/38895068198",
+  "deploy_job_id": 116953462441,
+  "deploy_job_conclusion": "success",
+  "worker_version_id": "f1584c8b-7d66-4b1b-acd1-6daf1c49a042",
+  "ci_run": "https://github.com/recytator/student-os/actions/runs/38895068172",
+  "ci_conclusion": "success",
+  "local_unit_integration_passed": 134,
+  "local_e2e_passed": 14,
+  "timetable": {
+    "storage": "verified_in_production_D1_and_private_HTTPS_bootstrap",
+    "group": "GI1 / GL2",
+    "starts_on": "2026-10-04",
+    "entries": 18,
+    "subjects": 10,
+    "recurrence": "Reference timetable retains original partial-week notes; no unconfirmed dated weekly events or AI availability were invented."
+  },
+  "document_repair": {
+    "input": "Existing owner document previously failed on the source-array limit. No private content, output, identifier or session token is included here.",
+    "document_stage": "Completed in the first repair deployment; preserved checkpoint reused.",
+    "progress": [
+      {
+        "at": "2026-10-16T11:39:34.497Z",
+        "next_state": "planner",
+        "lifetime_call_reservations": 6
+      },
+      { "at": "2026-10-16T11:39:58.338Z", "next_state": "review", "lifetime_call_reservations": 7 },
+      {
+        "at": "2026-10-16T11:40:20.298Z",
+        "next_state": "approval",
+        "lifetime_call_reservations": 8
+      }
+    ],
+    "status": "ready_for_owner_review",
+    "automatically_approved": false,
+    "new_analysis_reservations": 0,
+    "usage_refunded": false,
+    "temporary_session": "Only the maintenance session was deleted in finally; owner device sessions were preserved.",
+    "scope": "Actual production HTTPS, deployed Worker, D1 checkpoints and real Workers AI. Exact request CPU/neuron usage was not measured; this is a functional test of the owner's sample."
+  }
+}

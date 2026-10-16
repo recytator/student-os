@@ -2,7 +2,7 @@
 
 Osobisty system studiów po polsku: React/PWA, Cloudflare Workers + D1 i czterej agenci Workers AI. Dane produkcyjne są prywatne; serwer dopuszcza wyłącznie skonfigurowane konto GitHub. Bez danych przykładowych na pulpicie i bez symulowanego AI w aplikacji.
 
-**Stan:** [aplikacja działa](https://studentos.recytator.workers.dev) na Workers Free. Właściciel potwierdził logowanie GitHub i pulpit. Produkcyjny test wykonał 36 żądań HTTPS: CRUD, eksporty, rzeczywiste cztery role GLM oraz zapis 4 zadań i 4 bloków nauki w D1. CI: **128/128 testów i 12/12 E2E PASS**. Fizyczny Android/PWA i drugie urządzenie pozostają do odbioru. Dokładnego CPU nie zmierzono; przetestowany przepływ AI działał na Free. [Raport i dowody](docs/TEST_REPORT.md), [kryteria odbioru](docs/ACCEPTANCE.md).
+**Stan:** [aplikacja działa](https://studentos.recytator.workers.dev) na Workers Free. Właściciel potwierdził logowanie GitHub i pulpit. Produkcyjny test wykonał 36 żądań HTTPS: CRUD, eksporty, rzeczywiste cztery role GLM oraz zapis 4 zadań i 4 bloków nauki w D1. CI: **134/134 testów i 14/14 E2E PASS**. Poprawka z 16.10 usuwa błędy limitu źródeł i wymusza JSON Schema w GLM; rzeczywisty dokument właściciela ukończył analizę. Plan GI1/GL2 jest zapisany w Kalendarzu z oznaczonymi nieznanymi tygodniami. Fizyczny Android/PWA i drugie urządzenie pozostają do odbioru. Dokładnego CPU nie zmierzono; przetestowany przepływ AI działał na Free. [Raport i dowody](docs/TEST_REPORT.md), [kryteria odbioru](docs/ACCEPTANCE.md).
 
 ## Uruchomienie lokalne
 
