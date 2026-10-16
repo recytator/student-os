@@ -1,0 +1,26 @@
+name: Diagnose document analysis operational metadata
+on:
+  push:
+    branches: [qa/document-repair]
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    environment: production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+      GITHUB_OWNER_ID: ${{ vars.GITHUB_OWNER_ID || github.actor_id }}
+      FREE_PLAN_CONFIRMED: 'true'
+      STUDENTOS_REPAIR_DIAGNOSE: 'true'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: node scripts/prepare-deployment.mjs
+      - run: node scripts/verify-document-repair.mjs

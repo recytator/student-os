@@ -27,6 +27,16 @@ const cf = async (sql, params = []) => {
 };
 const [owner] = await cf('SELECT id FROM users WHERE github_id=?', [config.vars.GITHUB_OWNER_ID]);
 if (!owner) throw new Error('EXISTING_OWNER_REQUIRED');
+if (process.env.STUDENTOS_REPAIR_DIAGNOSE === 'true') {
+  const steps = await cf(
+    `SELECT agent,state,duration_ms,validation_json,error FROM agent_steps
+    WHERE run_id=(SELECT id FROM agent_runs WHERE user_id=? ORDER BY rowid DESC LIMIT 1)
+    ORDER BY rowid`,
+    [owner.id],
+  );
+  console.log(JSON.stringify({ diagnostic: 'operational_metadata_only', steps }));
+  process.exit(0);
+}
 const [imported] = await cf(
   "SELECT json_extract(data_json,'$.group') AS class_group,json_extract(data_json,'$.starts_on') AS starts_on,json_array_length(data_json,'$.entries') AS entries FROM semester_timetables WHERE user_id=? AND semester_key='2026-2027-winter'",
   [owner.id],
