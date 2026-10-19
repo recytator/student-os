@@ -2,6 +2,7 @@ import { ZodError } from 'zod';
 import { currentUser, handleAuth, checkCsrf } from './auth';
 import { handleApi } from './api';
 import { handleOrchestrator } from './orchestrator';
+import { handleNotes } from './notes';
 import { HttpError, json, rateLimit, type Env } from './types';
 
 function secure(response: Response, request: Request): Response {
@@ -44,7 +45,9 @@ export default {
         request.method === 'GET' ? 180 : 60,
       );
       const response =
-        (await handleApi(request, env, user)) ?? (await handleOrchestrator(request, env, user));
+        (await handleApi(request, env, user)) ??
+        (await handleNotes(request, env, user)) ??
+        (await handleOrchestrator(request, env, user));
       if (!response) throw new HttpError(404, 'NOT_FOUND', 'Nie znaleziono endpointu.');
       return secure(response, request);
     } catch (error) {

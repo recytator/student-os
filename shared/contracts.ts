@@ -23,6 +23,7 @@ export const academicYearSchema = z
   }, 'Rok akademicki musi obejmować kolejne lata');
 export const prioritySchema = z.enum(['low', 'medium', 'high']);
 export const taskStatusSchema = z.enum(['todo', 'done']);
+export const taskKindSchema = z.enum(['task', 'exam', 'colloquium', 'project']);
 const titleSchema = z.string().trim().min(1).max(240);
 const nullableId = idSchema.nullable().default(null);
 
@@ -44,6 +45,7 @@ export const taskInputSchema = z
     due_date: dateSchema.nullable().default(null),
     priority: prioritySchema.default('medium'),
     status: taskStatusSchema.default('todo'),
+    kind: taskKindSchema.default('task'),
     document_id: nullableId,
     notes: z.string().max(10000).default(''),
   })
@@ -67,6 +69,43 @@ export const scheduleInputSchema = z
     valid_from: dateSchema,
     valid_to: dateSchema,
     location: z.string().trim().max(200).default(''),
+    class_type: z.string().trim().max(40).default(''),
+    notes: z.string().trim().max(500).default(''),
+    tentative: z.number().int().min(0).max(1).default(0),
+  })
+  .strict();
+export const scheduleExceptionInputSchema = z
+  .object({ date: dateSchema, kind: z.enum(['cancelled', 'confirmed']) })
+  .strict();
+export const documentPatchSchema = z
+  .object({ subject_id: nullableId.optional(), name: z.string().trim().min(1).max(240).optional() })
+  .strict();
+export const notesDetailSchema = z.enum(['concise', 'standard', 'detailed']);
+export const notesRequestSchema = z
+  .object({ detail: notesDetailSchema.default('standard') })
+  .strict();
+/** One AI pass over a bounded chunk of a document. Server-side sanitizing keeps it within limits. */
+export const notesPartSchema = z
+  .object({
+    title: z.string().max(200),
+    summary: z.string().max(2000),
+    sections: z
+      .array(
+        z
+          .object({
+            heading: z.string().max(200),
+            pages: z.array(z.number().int().min(1).max(300)).max(20),
+            points: z.array(z.string().max(700)).min(1).max(14),
+          })
+          .strict(),
+      )
+      .max(14),
+    key_terms: z
+      .array(z.object({ term: z.string().max(140), definition: z.string().max(600) }).strict())
+      .max(24),
+    questions: z
+      .array(z.object({ question: z.string().max(400), answer: z.string().max(900) }).strict())
+      .max(16),
   })
   .strict();
 export const subtaskInputSchema = z
@@ -285,6 +324,9 @@ export type DocumentAgentOutput = z.infer<typeof documentAgentOutputSchema>;
 export type DeadlineAgentOutput = z.infer<typeof deadlineAgentOutputSchema>;
 export type PlannerAgentOutput = z.infer<typeof plannerAgentOutputSchema>;
 export type ReviewAgentOutput = z.infer<typeof reviewAgentOutputSchema>;
+export type TaskKind = z.infer<typeof taskKindSchema>;
+export type NotesPart = z.infer<typeof notesPartSchema>;
+export type NotesDetail = z.infer<typeof notesDetailSchema>;
 export type ProposedTask = z.infer<typeof proposedTaskSchema>;
 export type StudyBlock = z.infer<typeof studyBlockSchema>;
 export type RunState = z.infer<typeof runStateSchema>;

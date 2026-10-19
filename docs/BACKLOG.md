@@ -13,7 +13,18 @@ Stan: **15.10.2026**, po wdrożeniu i produkcyjnym odbiorze rdzenia. Aplikacja: 
 - [x] Pełne CI: 128 testów jednostkowych/integracyjnych oraz 12 E2E mobile/desktop.
 - [x] Prawdziwe logi, pomiary względem referencji, dokumentacja i materiały prezentacyjne.
 
+## Wykonane w v0.2 (19.10.2026)
+
+- [x] Plan GI1/GL2 jako edytowalne zajęcia cykliczne z niepotwierdzonymi tygodniami i wyjątkami na pojedyncze dni; siatka tygodnia i widok dnia.
+- [x] Notatki AI i fiszki z PDF, PPTX, DOCX i TXT; eksport Markdown i druk do PDF.
+- [x] Rodzaje zadań, szybkie dodawanie z parsowaniem terminów, odliczanie do egzaminów, „Cofnij” po ukończeniu.
+- [x] Nowy interfejs: Dziś, Plan, Zadania, Materiały, Przedmioty, paleta poleceń (Ctrl+K).
+- [x] Wdrożenie nie uruchamia już testu AI na publicznym fixture ani jednorazowego skryptu naprawczego (oszczędza darmowy budżet Workers AI).
+
 ## P1 — dalszy odbiór i jakość codziennego użycia
+
+- [ ] Potwierdzić rzeczywistą jakość notatek GLM na wykładach właściciela (różne języki, slajdy z małą ilością tekstu).
+- [ ] Potwierdzić koniec semestru i tygodnie zajęć „do ustalenia” w planie (obecnie domyślnie 31.01.2027).
 
 - [ ] Fizyczny Android: instalacja i aktualizacja PWA, klawiatura, ręczna korekta propozycji oraz pełny scenariusz PDF.
 - [ ] Zachowanie danych po rzeczywistym wylogowaniu/ponownym logowaniu i synchronizacja z drugim urządzeniem.

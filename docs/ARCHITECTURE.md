@@ -39,6 +39,10 @@ Wszystkie prywatne operacje wymagają sesji zweryfikowanej na serwerze. Dane wej
 | `GET /api/export`                             | Prywatny eksport JSON, bez sekretów i tokenów                      |
 | `GET /api/export.ics`                         | Kalendarz ICS wydarzeń i powtarzalnych zajęć                       |
 | `DELETE /api/data`                            | Usunięcie danych akademickich właściciela                          |
+| `POST/DELETE /api/schedules/:id/exceptions`   | Odwołanie lub potwierdzenie pojedynczego tygodnia zajęć            |
+| `PATCH /api/documents/:id`                    | Zmiana przedmiotu lub nazwy materiału                              |
+| `POST /api/documents/:id/notes`               | Utworzenie (lub zastąpienie) notatek AI, `{ detail }`              |
+| `GET/DELETE /api/notes/:id`                   | Notatki z treścią; `POST /api/notes/:id/advance` — kolejna część   |
 
 Błędy: `{ error: { code, message, details? } }`. Nieistniejący i cudzy rekord dają ten sam HTTP 404. Dokumenty i uruchomienia mają osobne endpointy opisane w `ORCHESTRATION.md`; nie są zwykłym CRUD-em, ponieważ muszą zachowywać limity i przejścia maszyny stanów.
 
@@ -68,6 +72,12 @@ Każda tabela prywatnych danych ma `user_id`. Klucze obce wymuszają usunięcia 
 `analysis_results` zawiera propozycje przed zatwierdzeniem. Tabele `tasks` i `calendar_events` przechowują zatwierdzone dane. `agent_runs.context_json` to checkpoint, `agent_steps` to operacyjne logi. Elastyczne wyniki agentów mają walidowane JSON-y, natomiast encje akademickie są znormalizowane. Preferencje mają wersjonowalny JSON walidowany Zod przy zapisie i odczycie.
 
 Migracja `0003_task_calendar_links.sql` dodaje opcjonalne `calendar_events.task_id`: wygenerowane terminy i bloki są powiązane z zadaniem, a ręczne wydarzenia zachowują NULL. Zmiana terminu zadania synchronizuje powiązany termin i unieważnia wcześniejsze szacowane bloki. Nie uruchamia automatycznej, ukrytej analizy AI. Usunięcie zadania usuwa jego powiązane wydarzenia przez FK.
+
+Migracja `0007_plan_tasks_notes.sql` (v0.2) dodaje do `class_schedules` pola `class_type`, `notes` i `tentative`, do `tasks` pole `kind` (`task`, `exam`, `colloquium`, `project`), tabelę `schedule_exceptions` (odwołany/potwierdzony dzień serii) oraz `document_notes` (notatki AI, części generowane osobnymi żądaniami z dzierżawą jak w orkiestratorze). Ta sama migracja zamienia zapisaną transkrypcję planu GI1/GL2 na 18 edytowalnych serii zajęć: zakresy dat wynikają z uwag w transkrypcji („do 03.11.2026”, „od 10.11.2026”, „od 8. tygodnia”), wpisy „tygodnie do ustalenia” są oznaczone jako niepotwierdzone, a koniec semestru 31.01.2027 jest domyślny i edytowalny w widoku Plan → Zajęcia.
+
+## Notatki AI
+
+Klient wyodrębnia tekst na urządzeniu (PDF.js; PPTX i DOCX przez wbudowany czytnik ZIP i `DecompressionStream`). Serwer dzieli tekst na części do 22 000 znaków (maks. 8 części), a każde żądanie `advance` wykonuje jedno wywołanie modelu z JSON Schema po stronie dostawcy. Wynik jest traktowany jako niezaufany: serwer obcina pola, odrzuca puste sekcje i numery stron spoza części. Wywołania notatek liczą się do wspólnego dziennego limitu 24 wywołań (`ai_usage.calls`); nie zużywają limitu 4 analiz terminów.
 
 ## Przepływ agentowy
 

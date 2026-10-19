@@ -15,7 +15,7 @@ execFileSync(
     '--persist-to',
     '.wrangler/e2e',
   ],
-  { stdio: 'inherit' },
+  { stdio: 'inherit', shell: process.platform === 'win32' },
 );
 
 // Import the real transcription into this disposable local database only.
@@ -23,11 +23,18 @@ const semester = await readFile(
   new URL('../migrations/0004_semester_timetable.sql', import.meta.url),
   'utf8',
 );
+const plan = await readFile(
+  new URL('../migrations/0007_plan_tasks_notes.sql', import.meta.url),
+  'utf8',
+);
 const sql =
   "INSERT OR IGNORE INTO users(id,github_id) VALUES('local-developer','0');\n" +
   semester
     .slice(semester.indexOf('-- Import only'))
-    .replaceAll("github_id='166433083'", "github_id='0'");
+    .replaceAll("github_id='166433083'", "github_id='0'") +
+  '\n' +
+  // The timetable arrives after migrations here, so replay its conversion into recurring classes.
+  plan.slice(plan.indexOf('-- Timetable import'));
 await writeFile(new URL('../.wrangler/e2e/semester.sql', import.meta.url), sql);
 execFileSync(
   'npx',
@@ -42,5 +49,5 @@ execFileSync(
     '--file',
     '.wrangler/e2e/semester.sql',
   ],
-  { stdio: 'inherit' },
+  { stdio: 'inherit', shell: process.platform === 'win32' },
 );

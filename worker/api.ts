@@ -6,6 +6,7 @@ import {
   scheduleInputSchema,
   subtaskInputSchema,
   preferencesInputSchema,
+  scheduleExceptionInputSchema,
 } from '../shared/contracts';
 import { HttpError, json, readJson, type Env, type User } from './types';
 import { nextDate, warsawMidnight } from '../shared/time';
@@ -260,7 +261,7 @@ function fold(line: string): string {
   lines.push(current);
   return lines.join('\r\n');
 }
-function ics(events: Row[], schedules: Row[], subjects: Row[]): string {
+function ics(events: Row[], schedules: Row[], subjects: Row[], exceptions: Row[] = []): string {
   const lines = [
     'BEGIN:VCALENDAR',
     'VERSION:2.0',
@@ -311,15 +312,22 @@ function ics(events: Row[], schedules: Row[], subjects: Row[]): string {
         (new Date(`${String(schedule.valid_to)}T12:00:00Z`).valueOf() - first.valueOf()) /
           (7 * 86400000),
       ) + 1;
+    const start = String(schedule.start_time).replace(':', '');
+    const cancelled = exceptions
+      .filter((item) => item.schedule_id === schedule.id && item.kind === 'cancelled')
+      .map((item) => `EXDATE;TZID=Europe/Warsaw:${String(item.date).replace(/-/g, '')}T${start}00`);
+    const type = String(schedule.class_type ?? '');
     lines.push(
       'BEGIN:VEVENT',
       `UID:${escaped(schedule.id)}@studentos`,
       `DTSTAMP:${utc(new Date().toISOString())}`,
-      `DTSTART;TZID=Europe/Warsaw:${day}T${String(schedule.start_time).replace(':', '')}00`,
+      `DTSTART;TZID=Europe/Warsaw:${day}T${start}00`,
       `DTEND;TZID=Europe/Warsaw:${day}T${String(schedule.end_time).replace(':', '')}00`,
       `RRULE:FREQ=WEEKLY;BYDAY=${weekdays[Number(schedule.weekday) - 1]};COUNT=${count}`,
-      `SUMMARY:${escaped(subject?.name || 'Zajęcia')}`,
+      ...cancelled,
+      `SUMMARY:${escaped(`${subject?.name || 'Zajęcia'}${type ? ` (${type})` : ''}${Number(schedule.tentative) ? ' ?' : ''}`)}`,
       `LOCATION:${escaped(schedule.location)}`,
+      ...(schedule.notes ? [`DESCRIPTION:${escaped(schedule.notes)}`] : []),
       'END:VEVENT',
     );
   }
@@ -336,27 +344,44 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
       id: record.id,
       ...JSON.parse(String(record.data_json)),
     }));
-    const [subjects, tasks, events, schedules, documents, runs, prefs, subtasks] =
-      await Promise.all([
-        list(env, user.id, 'subjects'),
-        list(env, user.id, 'tasks'),
-        list(env, user.id, 'calendar_events'),
-        list(env, user.id, 'class_schedules'),
-        env.DB.prepare(
-          'SELECT id,user_id,subject_id,name,hash,page_count,text_length,academic_year,created_at,updated_at FROM documents WHERE user_id=? ORDER BY created_at DESC LIMIT 1000',
-        )
-          .bind(user.id)
-          .all<Row>()
-          .then((r) => r.results),
-        env.DB.prepare(
-          'SELECT id,user_id,document_id,state,model,calls,retries,error,created_at,updated_at FROM agent_runs WHERE user_id=? ORDER BY created_at DESC LIMIT 1000',
-        )
-          .bind(user.id)
-          .all<Row>()
-          .then((r) => r.results),
-        preferences(env, user.id),
-        list(env, user.id, 'subtasks'),
-      ]);
+    const [
+      subjects,
+      tasks,
+      events,
+      schedules,
+      documents,
+      runs,
+      prefs,
+      subtasks,
+      exceptions,
+      notes,
+    ] = await Promise.all([
+      list(env, user.id, 'subjects'),
+      list(env, user.id, 'tasks'),
+      list(env, user.id, 'calendar_events'),
+      list(env, user.id, 'class_schedules'),
+      env.DB.prepare(
+        'SELECT id,user_id,subject_id,name,hash,page_count,text_length,academic_year,created_at,updated_at FROM documents WHERE user_id=? ORDER BY created_at DESC LIMIT 1000',
+      )
+        .bind(user.id)
+        .all<Row>()
+        .then((r) => r.results),
+      env.DB.prepare(
+        'SELECT id,user_id,document_id,state,model,calls,retries,error,created_at,updated_at FROM agent_runs WHERE user_id=? ORDER BY created_at DESC LIMIT 1000',
+      )
+        .bind(user.id)
+        .all<Row>()
+        .then((r) => r.results),
+      preferences(env, user.id),
+      list(env, user.id, 'subtasks'),
+      list(env, user.id, 'schedule_exceptions'),
+      env.DB.prepare(
+        "SELECT id,document_id,state,detail,chunks_total,chunks_done,error,json_extract(content_json,'$.parts[0].title') AS title,created_at,updated_at FROM document_notes WHERE user_id=? ORDER BY updated_at DESC LIMIT 1000",
+      )
+        .bind(user.id)
+        .all<Row>()
+        .then((r) => r.results),
+    ]);
     return json({
       user,
       subjects,
@@ -368,6 +393,8 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
       runs,
       preferences: prefs,
       subtasks,
+      schedule_exceptions: exceptions,
+      notes,
     });
   }
   if (resource === 'preferences') {
@@ -398,9 +425,11 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
       'subtasks',
       'calendar_events',
       'class_schedules',
+      'schedule_exceptions',
       'semester_timetables',
       'documents',
       'document_sections',
+      'document_notes',
       'analysis_results',
       'agent_runs',
       'agent_steps',
@@ -425,12 +454,13 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
     });
   }
   if (resource === 'export.ics' && request.method === 'GET') {
-    const [events, schedules, subjects] = await Promise.all([
+    const [events, schedules, subjects, exceptions] = await Promise.all([
       list(env, user.id, 'calendar_events'),
       list(env, user.id, 'class_schedules'),
       list(env, user.id, 'subjects'),
+      list(env, user.id, 'schedule_exceptions'),
     ]);
-    return new Response(ics(events, schedules, subjects), {
+    return new Response(ics(events, schedules, subjects, exceptions), {
       headers: {
         'Content-Type': 'text/calendar; charset=utf-8',
         'Content-Disposition': 'attachment; filename="studentos.ics"',
@@ -498,6 +528,35 @@ export async function handleApi(request: Request, env: Env, user: User): Promise
         return json(await owned(env, user.id, 'subtasks', subId));
       }
     }
+  }
+  if (resource === 'schedules' && id && parts[3] === 'exceptions') {
+    await owned(env, user.id, 'class_schedules', id);
+    const date = parts[4];
+    if (!date && request.method === 'POST') {
+      const input = scheduleExceptionInputSchema.parse(await readJson(request));
+      await env.DB.prepare(
+        'INSERT INTO schedule_exceptions(id,user_id,schedule_id,date,kind) VALUES(?,?,?,?,?) ON CONFLICT(schedule_id,date) DO UPDATE SET kind=excluded.kind',
+      )
+        .bind(crypto.randomUUID(), user.id, id, input.date, input.kind)
+        .run();
+      return json(
+        await env.DB.prepare(
+          'SELECT * FROM schedule_exceptions WHERE schedule_id=? AND user_id=? AND date=?',
+        )
+          .bind(id, user.id, input.date)
+          .first(),
+        201,
+      );
+    }
+    if (date && request.method === 'DELETE') {
+      await env.DB.prepare(
+        'DELETE FROM schedule_exceptions WHERE schedule_id=? AND user_id=? AND date=?',
+      )
+        .bind(id, user.id, date)
+        .run();
+      return json({ ok: true });
+    }
+    throw new HttpError(405, 'METHOD_NOT_ALLOWED', 'Niedozwolona metoda.');
   }
   if (!Object.hasOwn(collections, resource) || parts.length > 3) return null;
   const collection = collections[resource as Collection];

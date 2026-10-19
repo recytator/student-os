@@ -52,31 +52,3 @@ jobs:
           APP_URL: ${{ steps.prepare.outputs.app_url }}
           OAUTH_CONFIGURED: ${{ steps.oauth.outputs.oauth_configured }}
         run: node scripts/smoke-production.mjs
-      - name: Verify imported timetable and continue the latest analysis stopped by the repaired defect
-        run: node scripts/verify-document-repair.mjs
-  live-ai-acceptance:
-    needs: deploy
-    runs-on: ubuntu-latest
-    timeout-minutes: 16
-    environment: production
-    env:
-      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
-      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-      FREE_PLAN_CONFIRMED: 'true'
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm run build
-      - name: Verify real remote AI and D1 with isolated public fixture
-        run: node scripts/live-ai-acceptance.mjs
-      - name: Preserve structured acceptance evidence
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: studentos-live-ai-acceptance
-          path: artifacts/live-ai/
-          retention-days: 14

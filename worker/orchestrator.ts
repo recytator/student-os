@@ -3,6 +3,7 @@ export { warsawMidnight } from '../shared/time';
 import { z } from 'zod';
 import {
   approvalSchema,
+  documentPatchSchema,
   documentUploadSchema,
   preferencesInputSchema,
   type DocumentAgentOutput,
@@ -149,7 +150,7 @@ class WorkflowValidationError extends Error {
 }
 const MAX_CALLS = 12;
 const MAX_ANALYSES_PER_DAY = 4;
-const MAX_CALLS_PER_DAY = 24;
+export const MAX_CALLS_PER_DAY = 24;
 const MODELS = ['@cf/zai-org/glm-4.7-flash', '@cf/google/gemma-4-26b-a4b-it'];
 interface DocumentRecord {
   id: string;
@@ -1147,6 +1148,25 @@ export async function handleOrchestrator(
         throw error;
       }
       return json({ document: await ownedDocument(env, user.id, documentId), cached: false }, 201);
+    }
+    if (request.method === 'PATCH' && itemId && !action) {
+      await ownedDocument(env, user.id, itemId);
+      const input = documentPatchSchema.parse(await readJson(request));
+      if (
+        input.subject_id &&
+        !(await env.DB.prepare('SELECT id FROM subjects WHERE id=? AND user_id=?')
+          .bind(input.subject_id, user.id)
+          .first())
+      )
+        throw new HttpError(422, 'SUBJECT', 'Wybrany przedmiot nie istnieje.');
+      const fields = Object.entries(input).filter(([, value]) => value !== undefined);
+      if (fields.length)
+        await env.DB.prepare(
+          `UPDATE documents SET ${fields.map(([key]) => `${key}=?`).join(',')},updated_at=? WHERE id=? AND user_id=?`,
+        )
+          .bind(...fields.map(([, value]) => value), nowISO(), itemId, user.id)
+          .run();
+      return json({ document: await ownedDocument(env, user.id, itemId) });
     }
     if (request.method === 'DELETE' && itemId) {
       await ownedDocument(env, user.id, itemId);

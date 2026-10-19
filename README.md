@@ -1,8 +1,19 @@
 # StudentOS
 
-Osobisty system studiów po polsku: React/PWA, Cloudflare Workers + D1 i czterej agenci Workers AI. Dane produkcyjne są prywatne; serwer dopuszcza wyłącznie skonfigurowane konto GitHub. Bez danych przykładowych na pulpicie i bez symulowanego AI w aplikacji.
+Osobisty system studiów po polsku: React/PWA, Cloudflare Workers + D1 i Workers AI. Dane produkcyjne są prywatne; serwer dopuszcza wyłącznie skonfigurowane konto GitHub. Bez danych przykładowych na pulpicie i bez symulowanego AI w aplikacji.
 
-**Stan:** [aplikacja działa](https://studentos.recytator.workers.dev) na Workers Free. Właściciel potwierdził logowanie GitHub i pulpit. Produkcyjny test wykonał 36 żądań HTTPS: CRUD, eksporty, rzeczywiste cztery role GLM oraz zapis 4 zadań i 4 bloków nauki w D1. CI: **134/134 testów i 14/14 E2E PASS**. Poprawka z 16.10 usuwa błędy limitu źródeł i wymusza JSON Schema w GLM; rzeczywisty dokument właściciela ukończył analizę. Plan GI1/GL2 jest zapisany w Kalendarzu z oznaczonymi nieznanymi tygodniami. Fizyczny Android/PWA i drugie urządzenie pozostają do odbioru. Dokładnego CPU nie zmierzono; przetestowany przepływ AI działał na Free. [Raport i dowody](docs/TEST_REPORT.md), [kryteria odbioru](docs/ACCEPTANCE.md).
+## Co potrafi (v0.2, 19.10.2026)
+
+- **Dziś** — co trwa teraz i co jest następne (z odliczaniem), plan dnia, zaległe zadania i zadania na 7 dni, odliczanie do egzaminów i kolokwiów, ostatnie notatki.
+- **Plan** — prawdziwa siatka tygodnia (godziny, nakładające się zajęcia obok siebie), widok dnia na telefonie i lista zajęć cyklicznych. Zajęcia mają rodzaj (wykład, GI1, GL2…), salę, uwagi i zakres dat. Zajęcia „tygodnie do ustalenia” są oznaczone jako niepotwierdzone; każdy tydzień można potwierdzić albo odwołać jednym kliknięciem. Eksport ICS uwzględnia odwołane tygodnie (EXDATE).
+- **Zadania** — szybkie dodawanie z rozpoznawaniem terminu, przedmiotu i rodzaju (`Kolokwium z wizji pt #percepcja !`), grupy Zaległe / Dziś / Jutro / 7 dni / Później, rodzaje: zadanie, kolokwium, egzamin, projekt; ukończenie z „Cofnij”.
+- **Materiały** — PDF, PowerPoint (.pptx, z notatkami prowadzącego), Word (.docx) i TXT czytane na urządzeniu. Z każdego materiału AI tworzy **notatki** (streszczenie, sekcje z numerami stron, słowniczek, pytania), które można skopiować jako Markdown, pobrać lub wydrukować do PDF, oraz **fiszki** do powtórek. Sylabus można dodatkowo przeanalizować czterema agentami pod kątem terminów.
+- **Przedmioty** — jeden widok przedmiotu: najbliższe zajęcia, seria zajęć, zadania i materiały.
+- Wyszukiwarka i szybkie akcje: `Ctrl+K` lub `/`; `N` — nowe zadanie.
+
+Notatki i analiza terminów korzystają ze wspólnego limitu 24 wywołań modelu dziennie (Workers Free).
+
+**Stan wcześniejszego odbioru (v0.1):** [aplikacja działa](https://studentos.recytator.workers.dev) na Workers Free. Właściciel potwierdził logowanie GitHub i pulpit. Produkcyjny test wykonał 36 żądań HTTPS: CRUD, eksporty, rzeczywiste cztery role GLM oraz zapis 4 zadań i 4 bloków nauki w D1. CI: **134/134 testów i 14/14 E2E PASS**. Poprawka z 16.10 usuwa błędy limitu źródeł i wymusza JSON Schema w GLM; rzeczywisty dokument właściciela ukończył analizę. Plan GI1/GL2 jest zapisany w Kalendarzu z oznaczonymi nieznanymi tygodniami. Fizyczny Android/PWA i drugie urządzenie pozostają do odbioru. Dokładnego CPU nie zmierzono; przetestowany przepływ AI działał na Free. [Raport i dowody](docs/TEST_REPORT.md), [kryteria odbioru](docs/ACCEPTANCE.md).
 
 ## Uruchomienie lokalne
 
