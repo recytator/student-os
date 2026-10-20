@@ -20,16 +20,16 @@ import type { Bootstrap, Schedule, Subject } from '../lib/types';
 import { DocumentList } from './Materials';
 
 export const COLORS = [
-  '#9b8cff',
-  '#5cc8b0',
-  '#f2a65a',
-  '#6aa8ff',
-  '#ef7d9a',
-  '#b4c95c',
-  '#e7c24f',
-  '#c38cf2',
-  '#59c3e6',
-  '#f08b6b',
+  '#0a84ff',
+  '#30d158',
+  '#ff9f0a',
+  '#bf5af2',
+  '#ff375f',
+  '#64d2ff',
+  '#5e5ce6',
+  '#ffd60a',
+  '#ff453a',
+  '#ac8e68',
 ];
 
 function nextFor(data: Bootstrap, subjectId: string) {
