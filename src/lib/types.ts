@@ -67,6 +67,8 @@ export type Note = Omit<NoteMeta, 'title'> & {
   content: { parts: NotesPart[] };
   calls: number;
   model: string;
+  /** Time left on the lease of a part that is being generated right now. */
+  busy_ms?: number;
 };
 export type Timetable = {
   id: string;

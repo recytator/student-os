@@ -17,7 +17,11 @@ function secure(response: Response, request: Request): Response {
   );
   if (new URL(request.url).protocol === 'https:')
     headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
-  if (new URL(request.url).pathname.startsWith('/api/')) headers.set('Cache-Control', 'no-store');
+  if (
+    new URL(request.url).pathname.startsWith('/api/') &&
+    !headers.get('Cache-Control')?.includes('no-store')
+  )
+    headers.set('Cache-Control', 'no-store');
   return new Response(response.body, {
     status: response.status,
     statusText: response.statusText,
@@ -26,7 +30,7 @@ function secure(response: Response, request: Request): Response {
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env, ctx?: ExecutionContext): Promise<Response> {
     const url = new URL(request.url);
     try {
       if (!url.pathname.startsWith('/api/'))
@@ -46,7 +50,7 @@ export default {
       );
       const response =
         (await handleApi(request, env, user)) ??
-        (await handleNotes(request, env, user)) ??
+        (await handleNotes(request, env, user, ctx)) ??
         (await handleOrchestrator(request, env, user));
       if (!response) throw new HttpError(404, 'NOT_FOUND', 'Nie znaleziono endpointu.');
       return secure(response, request);

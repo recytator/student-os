@@ -4,6 +4,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useRef,
   useState,
   type ButtonHTMLAttributes,
@@ -143,20 +144,54 @@ export function Segmented<T extends string>({
   onChange: (value: T) => void;
   label: string;
 }) {
+  const wrap = useRef<HTMLDivElement>(null);
+  const list = useRef<HTMLDivElement>(null);
+  // Mark the edges that hide more segments, so a narrow phone shows a fade instead of a cut-off tab.
+  useEffect(() => {
+    const scroller = list.current;
+    const host = wrap.current;
+    if (!scroller || !host) return;
+    const update = () => {
+      const max = scroller.scrollWidth - scroller.clientWidth;
+      host.toggleAttribute('data-more-start', scroller.scrollLeft > 2);
+      host.toggleAttribute('data-more-end', scroller.scrollLeft < max - 2);
+    };
+    update();
+    scroller.addEventListener('scroll', update, { passive: true });
+    const observer = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(update);
+    observer?.observe(scroller);
+    return () => {
+      scroller.removeEventListener('scroll', update);
+      observer?.disconnect();
+    };
+  }, [options.length]);
+  useEffect(() => {
+    const scroller = list.current;
+    const active = scroller?.querySelector<HTMLElement>('[aria-selected="true"]');
+    if (!scroller || !active || scroller.scrollWidth <= scroller.clientWidth) return;
+    const left = active.offsetLeft;
+    if (
+      left < scroller.scrollLeft ||
+      left + active.offsetWidth > scroller.scrollLeft + scroller.clientWidth
+    )
+      scroller.scrollTo({ left: left - 24, behavior: 'smooth' });
+  }, [value]);
   return (
-    <div className="segmented" role="tablist" aria-label={label}>
-      {options.map((option) => (
-        <button
-          type="button"
-          role="tab"
-          aria-selected={value === option.value}
-          key={option.value}
-          className={value === option.value ? 'active' : ''}
-          onClick={() => onChange(option.value)}
-        >
-          {option.label}
-        </button>
-      ))}
+    <div className="segmented-wrap" ref={wrap}>
+      <div className="segmented" role="tablist" aria-label={label} ref={list}>
+        {options.map((option) => (
+          <button
+            type="button"
+            role="tab"
+            aria-selected={value === option.value}
+            key={option.value}
+            className={value === option.value ? 'active' : ''}
+            onClick={() => onChange(option.value)}
+          >
+            {option.label}
+          </button>
+        ))}
+      </div>
     </div>
   );
 }
@@ -193,13 +228,14 @@ export function Modal({
             }
           }}
         >
+          <span className="modal-grabber" aria-hidden />
           <header className="modal-header">
             <div>
               <Dialog.Title>{title}</Dialog.Title>
               {description && <p className="modal-description">{description}</p>}
             </div>
-            <Dialog.Close className="icon-btn" aria-label="Zamknij">
-              <X size={18} />
+            <Dialog.Close className="icon-btn modal-close" aria-label="Zamknij">
+              <X size={16} />
             </Dialog.Close>
           </header>
           <div className="modal-body">{children}</div>
