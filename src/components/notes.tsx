@@ -12,7 +12,7 @@ import {
   X,
 } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { api, ApiError } from '../api';
+import { api, ApiError, apiStream } from '../api';
 import { cn } from '../lib/cn';
 import { useStore } from '../lib/store';
 import type { Note, NotesDetail, NotesPart } from '../lib/types';
@@ -52,14 +52,23 @@ export function notesMarkdown(name: string, parts: NotesPart[]) {
   return lines.join('\n');
 }
 
-/** Loads the note and, while it is running, advances it one chunk per request. */
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
+const failedMessage = 'Nie udało się wygenerować notatek.';
+
+/**
+ * Loads the note and, while it is running, advances it one part per request. A dropped
+ * connection (phone locked, network switch) is not a failure: the server finishes the part,
+ * so the hook waits for it and continues.
+ */
 export function useNote(documentId: string) {
   const { data, call, refresh } = useStore();
   const meta = data.notes.find((note) => note.document_id === documentId);
   const [note, setNote] = useState<Note | null>(null);
   const [working, setWorking] = useState(false);
+  const [status, setStatus] = useState('');
   const [error, setError] = useState('');
   const active = useRef(true);
+  const running = useRef(false);
   useEffect(() => {
     active.current = true;
     return () => {
@@ -71,39 +80,95 @@ export function useNote(documentId: string) {
       setNote(null);
       return;
     }
+    if (running.current) return;
     void api<Note>(`/notes/${meta.id}`).then(
-      (value) => active.current && setNote(value),
+      (value) => active.current && !running.current && setNote(value),
       () => undefined,
     );
   }, [meta?.id, meta?.updated_at]);
   const run = useCallback(
     async (start: Note) => {
+      if (running.current) return;
+      running.current = true;
       let current = start;
+      let drops = 0;
+      const show = (value: Note) => {
+        current = value;
+        if (active.current) setNote(value);
+      };
       setWorking(true);
       setError('');
+      setStatus('');
       try {
         while (active.current && current.state !== 'ready') {
-          current = await api<Note>(`/notes/${current.id}/advance`, { method: 'POST' });
-          if (active.current) setNote(current);
-          if (current.state === 'failed') {
-            setError(current.error ?? 'Nie udało się wygenerować notatek.');
-            break;
+          if (current.busy_ms) {
+            // Another request (often our own, dropped one) still holds this part.
+            setStatus('Kończę rozpoczętą część…');
+            await sleep(Math.min(current.busy_ms + 500, 8000));
+            show(await api<Note>(`/notes/${current.id}`));
+            if (current.state === 'failed') throw new Error(current.error ?? failedMessage);
+            continue;
+          }
+          try {
+            setStatus('');
+            show(await apiStream<Note>(`/notes/${current.id}/advance`));
+            drops = 0;
+            if (current.state === 'failed') throw new Error(current.error ?? failedMessage);
+          } catch (e) {
+            if (e instanceof ApiError && e.code === 'NOTES_BUSY') {
+              const details = e.details as { retry_after_ms?: number } | undefined;
+              current = { ...current, busy_ms: details?.retry_after_ms ?? 5000 };
+              continue;
+            }
+            if (e instanceof ApiError || !(e instanceof TypeError)) throw e;
+            if (++drops > 4)
+              throw new Error(
+                'Brak połączenia z serwerem. Gotowe części są zapisane — wznów, gdy wróci internet.',
+              );
+            setStatus('Połączenie przerwane — wznawiam…');
+            await sleep(2000 * drops);
+            try {
+              show(await api<Note>(`/notes/${current.id}`));
+            } catch {
+              // Still offline; the next attempt retries.
+            }
+            if (current.state === 'failed') throw new Error(current.error ?? failedMessage);
           }
         }
       } catch (e) {
-        if (!(e instanceof ApiError && e.code === 'NOTES_BUSY'))
-          setError(e instanceof Error ? e.message : 'Nie udało się wygenerować notatek.');
+        if (active.current) setError(e instanceof Error ? e.message : failedMessage);
       } finally {
-        if (active.current) setWorking(false);
+        running.current = false;
+        if (active.current) {
+          setWorking(false);
+          setStatus('');
+        }
         void refresh().catch(() => undefined);
       }
     },
     [refresh],
   );
   useEffect(() => {
-    if (note?.state === 'running' && !working && !error) void run(note);
+    if (note?.state === 'running' && !error) void run(note);
     // Only auto-continue a running note once per load.
   }, [note?.id, note?.state]);
+  useEffect(() => {
+    // Phones suspend background tabs; pick the work up again when the user comes back.
+    const onVisible = () => {
+      if (document.visibilityState !== 'visible' || running.current || !note) return;
+      if (note.state !== 'running') return;
+      void api<Note>(`/notes/${note.id}`).then(
+        (value) => {
+          if (!active.current) return;
+          setNote(value);
+          if (value.state === 'running') void run(value);
+        },
+        () => undefined,
+      );
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
+  }, [note, run]);
   const start = async (detail: NotesDetail) => {
     setError('');
     try {
@@ -119,7 +184,20 @@ export function useNote(documentId: string) {
       setError(e instanceof Error ? e.message : 'Nie udało się rozpocząć.');
     }
   };
-  return { note, working, error, start, resume: () => note && run(note) };
+  return { note, working, status, error, start, resume: () => note && run(note) };
+}
+
+function Elapsed() {
+  const [seconds, setSeconds] = useState(0);
+  useEffect(() => {
+    const timer = setInterval(() => setSeconds((value) => value + 1), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  return (
+    <span className="tabular">
+      {Math.floor(seconds / 60)}:{String(seconds % 60).padStart(2, '0')}
+    </span>
+  );
 }
 
 export function NotesView({
@@ -131,7 +209,7 @@ export function NotesView({
   noteState: ReturnType<typeof useNote>;
   onPage: (page: number) => void;
 }) {
-  const { note, working, error, start, resume } = noteState;
+  const { note, working, status, error, start, resume } = noteState;
   const { toast, confirm } = useFeedback();
   const [detail, setDetail] = useState<NotesDetail>(note?.detail ?? 'standard');
   const parts = note?.content.parts.filter(Boolean) ?? [];
@@ -161,35 +239,65 @@ export function NotesView({
         {error && <p className="notice notice-red">{error}</p>}
       </div>
     );
-  if (note.state !== 'ready')
+  if (note.state !== 'ready') {
+    const failed = !working && (note.state === 'failed' || Boolean(error));
+    const shown = error || note.error;
     return (
-      <div className="notes-progress">
+      <div className="notes-status">
         <div className="progress-head">
-          {working ? <LoaderCircle size={18} className="spin" /> : <Sparkles size={18} />}
+          {working ? <LoaderCircle size={20} className="spin" /> : <Sparkles size={20} />}
           <div>
             <strong>
-              {note.state === 'failed'
-                ? 'Generowanie przerwane'
+              {failed
+                ? 'Generowanie wstrzymane'
                 : `Tworzę notatki · część ${Math.min(note.chunks_done + 1, note.chunks_total)} z ${note.chunks_total}`}
             </strong>
-            <p className="muted small">
-              {note.state === 'failed'
-                ? 'Gotowe części są zapisane. Możesz wznowić od miejsca przerwania.'
-                : 'Zwykle 20–60 s na część. Nie zamykaj tej karty — po powrocie generowanie wznowi się samo.'}
+            <p className="notes-hint">
+              {failed
+                ? note.chunks_done
+                  ? `Gotowe części (${note.chunks_done} z ${note.chunks_total}) są zapisane. Możesz wznowić od miejsca przerwania.`
+                  : 'Nic nie zostało utracone. Możesz spróbować ponownie.'
+                : status ||
+                  'Zwykle 20–60 s na część. Możesz zablokować telefon — praca trwa na serwerze.'}
+              {working && (
+                <>
+                  {' · '}
+                  <Elapsed key={note.chunks_done} />
+                </>
+              )}
             </p>
           </div>
         </div>
-        <div className="meter meter-lg">
-          <span style={{ width: `${(note.chunks_done / note.chunks_total) * 100}%` }} />
+        <div className="meter meter-lg" aria-hidden>
+          <span
+            style={{
+              width: `${Math.max(working ? 4 : 0, (note.chunks_done / note.chunks_total) * 100)}%`,
+            }}
+          />
         </div>
-        {(error || note.error) && <p className="notice notice-red">{error || note.error}</p>}
+        {failed && shown && <p className="notice notice-red">{shown}</p>}
         {!working && (
-          <Button variant="primary" onClick={() => void resume()}>
-            <RefreshCw size={15} /> Wznów
-          </Button>
+          <div className="notes-status-actions">
+            <Button variant="primary" onClick={() => void resume()}>
+              <RefreshCw size={15} /> {note.chunks_done ? 'Wznów' : 'Spróbuj ponownie'}
+            </Button>
+            <Button
+              variant="ghost"
+              onClick={() =>
+                void confirm({
+                  title: 'Zacząć od nowa?',
+                  message: 'Gotowe części zostaną usunięte, a notatki wygenerowane ponownie.',
+                  confirm: 'Zacznij od nowa',
+                }).then((ok) => ok && void start(note.detail))
+              }
+            >
+              <RotateCcw size={15} /> Od nowa
+            </Button>
+          </div>
         )}
       </div>
     );
+  }
   const markdown = notesMarkdown(documentName, parts);
   const terms = parts.flatMap((part) => part.key_terms);
   const questions = parts.flatMap((part) => part.questions);

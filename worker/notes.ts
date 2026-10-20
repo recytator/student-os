@@ -9,9 +9,18 @@ import {
 import { AgentProviderError, chunkPages, warsawDate, type AiBinding } from './agents';
 import { MAX_CALLS_PER_DAY } from './orchestrator';
 import { HttpError, json, readJson, type Env, type User } from './types';
-const CHUNK_CHARACTERS = 22_000;
-const MAX_CHUNKS = 8;
-const LEASE_MS = 240_000;
+// Smaller parts keep each model call well under a minute, so a phone connection survives it.
+const CHUNK_CHARACTERS = 14_000;
+const MAX_CHUNKS = 12;
+const MODEL_TIMEOUT_MS = 150_000;
+// A dropped request may leave its lease behind; it must expire soon after the model timeout.
+const LEASE_MS = MODEL_TIMEOUT_MS + 20_000;
+const HEARTBEAT_MS = 10_000;
+const OUTPUT_TOKENS: Record<NotesDetail, number> = {
+  concise: 3000,
+  standard: 5000,
+  detailed: 7000,
+};
 const DEFAULT_MODEL = '@cf/zai-org/glm-4.7-flash';
 
 const DETAIL: Record<NotesDetail, string> = {
@@ -44,6 +53,50 @@ interface NoteRow {
   lease_until: number;
   created_at: string;
   updated_at: string;
+}
+
+/**
+ * Parses model JSON, recovering the complete members of a response cut off by the output budget.
+ * Cutting at a top-level-safe comma keeps every finished section instead of losing the whole part.
+ */
+export function parseModelJson(input: string): unknown {
+  const clean = input
+    .trim()
+    .replace(/^```(?:json)?\s*/, '')
+    .replace(/\s*```$/, '');
+  try {
+    return JSON.parse(clean);
+  } catch {
+    // Fall through to recovery of a truncated document.
+  }
+  const start = clean.indexOf('{');
+  if (start < 0) throw new SyntaxError('Model nie zwrócił JSON.');
+  const body = clean.slice(start);
+  const stack: string[] = [];
+  const cuts: { at: number; closers: string }[] = [];
+  let inString = false;
+  for (let i = 0; i < body.length; i++) {
+    const char = body[i]!;
+    if (inString) {
+      if (char === '\\') i++;
+      else if (char === '"') inString = false;
+      continue;
+    }
+    if (char === '"') inString = true;
+    else if (char === '{' || char === '[') {
+      stack.push(char === '{' ? '}' : ']');
+      cuts.push({ at: i + 1, closers: [...stack].reverse().join('') });
+    } else if (char === '}' || char === ']') stack.pop();
+    else if (char === ',') cuts.push({ at: i, closers: [...stack].reverse().join('') });
+  }
+  for (const cut of cuts.slice(-60).reverse()) {
+    try {
+      return JSON.parse(body.slice(0, cut.at) + cut.closers);
+    } catch {
+      // Try an earlier boundary.
+    }
+  }
+  throw new SyntaxError('Nie udało się odczytać odpowiedzi modelu.');
 }
 
 const text = (value: unknown, max: number): string =>
@@ -117,7 +170,7 @@ export async function callNotesModel(
   if (content.length > 64_000) throw new Error('Przekroczono budżet wejścia modelu.');
   let timer: ReturnType<typeof setTimeout> | undefined;
   const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new AgentProviderError('timeout')), 180_000);
+    timer = setTimeout(() => reject(new AgentProviderError('timeout')), MODEL_TIMEOUT_MS);
   });
   let raw: unknown;
   try {
@@ -129,14 +182,14 @@ export async function callNotesModel(
         ],
         ...(model.includes('glm-4.7')
           ? {
-              max_completion_tokens: input.detail === 'detailed' ? 4000 : 3000,
+              max_completion_tokens: OUTPUT_TOKENS[input.detail],
               chat_template_kwargs: { enable_thinking: false },
               response_format: {
                 type: 'json_schema',
                 json_schema: { name: 'StudyNotes', strict: true, schema: NOTES_RESPONSE_SCHEMA },
               },
             }
-          : { max_tokens: 3000 }),
+          : { max_tokens: OUTPUT_TOKENS[input.detail] }),
         temperature: 0.2,
       }),
       timeout,
@@ -156,13 +209,7 @@ export async function callNotesModel(
   let response: unknown = result.response;
   if (response === undefined && Array.isArray(result.choices))
     response = (result.choices[0] as { message?: { content?: unknown } })?.message?.content;
-  if (typeof response === 'string')
-    response = JSON.parse(
-      response
-        .trim()
-        .replace(/^```(?:json)?\s*/, '')
-        .replace(/\s*```$/, ''),
-    );
+  if (typeof response === 'string') response = parseModelJson(response);
   const part = sanitizeNotesPart(response, new Set(input.pages.map((page) => page.page)));
   if (!part.sections.length && !part.summary) throw new Error('Model nie zwrócił treści notatek.');
   const usage = (result.usage ?? {}) as Record<string, unknown>;
@@ -184,6 +231,8 @@ async function ownedNote(env: Env, userId: string, noteId: string): Promise<Note
 const view = (note: NoteRow) => ({
   ...note,
   lease_until: undefined,
+  // Lets a client that lost its connection wait for the running part instead of failing.
+  busy_ms: Math.max(0, note.lease_until - Date.now()),
   content: JSON.parse(note.content_json) as { parts: NotesPart[] },
   content_json: undefined,
 });
@@ -237,16 +286,48 @@ export async function startNotes(env: Env, userId: string, documentId: string, i
   return view(await ownedNote(env, userId, noteId));
 }
 
-export async function advanceNotes(env: Env, userId: string, noteId: string) {
+type NoteJob = { note: NoteRow; document: string; chunk: DocumentPage[] };
+
+const failureMessage = (error: unknown) =>
+  error instanceof HttpError
+    ? error.message
+    : error instanceof AgentProviderError
+      ? {
+          quota: 'Dostawca AI odrzucił żądanie (limit). Spróbuj później.',
+          unavailable: 'Model AI jest chwilowo niedostępny. Spróbuj ponownie.',
+          timeout: 'Model AI nie odpowiedział na czas. Spróbuj ponownie.',
+          configuration: 'AI nie jest poprawnie skonfigurowane.',
+        }[error.kind]
+      : error instanceof SyntaxError
+        ? 'Model zwrócił nieczytelną odpowiedź. Spróbuj ponownie.'
+        : 'Nie udało się wygenerować tej części notatek. Spróbuj ponownie.';
+
+async function failNote(env: Env, userId: string, noteId: string, error: unknown) {
+  await env.DB.prepare(
+    "UPDATE document_notes SET state='failed',error=?,lease_until=0,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND user_id=?",
+  )
+    .bind(failureMessage(error), noteId, userId)
+    .run();
+}
+
+/** Takes the lease and reserves one AI call; everything that can be answered without the model. */
+async function prepareAdvance(
+  env: Env,
+  userId: string,
+  noteId: string,
+): Promise<NoteJob | { done: ReturnType<typeof view> }> {
   const note = await ownedNote(env, userId, noteId);
-  if (note.state === 'ready') return view(note);
+  if (note.state === 'ready') return { done: view(note) };
   const now = Date.now();
   const leased = await env.DB.prepare(
     "UPDATE document_notes SET lease_until=?,state='running',error=NULL WHERE id=? AND user_id=? AND lease_until<? AND state!='ready' RETURNING id",
   )
     .bind(now + LEASE_MS, noteId, userId, now)
     .first();
-  if (!leased) throw new HttpError(409, 'NOTES_BUSY', 'Ta część notatek jest już przetwarzana.');
+  if (!leased)
+    throw new HttpError(409, 'NOTES_BUSY', 'Ta część notatek jest już przetwarzana.', {
+      retry_after_ms: Math.max(1000, Math.min(note.lease_until - now, LEASE_MS)),
+    });
   try {
     const preferences = await env.DB.prepare(
       'SELECT value_json FROM user_preferences WHERE user_id=?',
@@ -273,10 +354,22 @@ export async function advanceNotes(env: Env, userId: string, noteId: string) {
         'AI_LIMIT',
         `Wykorzystano dzienny limit ${MAX_CALLS_PER_DAY} wywołań AI. Spróbuj jutro — dokument jest zapisany.`,
       );
+    return { note, document: document.name, chunk };
+  } catch (error) {
+    await failNote(env, userId, noteId, error);
+    if (error instanceof HttpError && error.status === 429) throw error;
+    return { done: view(await ownedNote(env, userId, noteId)) };
+  }
+}
+
+/** One model call for the leased part. Saves progress even if the client has gone away. */
+async function runAdvance(env: Env, userId: string, job: NoteJob) {
+  const { note } = job;
+  try {
     const { part, usage } = await callNotesModel(env.AI as unknown as AiBinding, note.model, {
-      document: document.name,
+      document: job.document,
       detail: note.detail,
-      pages: chunk,
+      pages: job.chunk,
       part: note.chunks_done + 1,
       parts: note.chunks_total,
     });
@@ -297,7 +390,7 @@ export async function advanceNotes(env: Env, userId: string, noteId: string) {
         usage.input,
         usage.output,
         usage.output,
-        noteId,
+        note.id,
         userId,
       ),
       env.DB.prepare(
@@ -305,31 +398,63 @@ export async function advanceNotes(env: Env, userId: string, noteId: string) {
       ).bind(usage.input ?? 0, usage.output ?? 0, userId, warsawDate(new Date().toISOString())),
     ]);
   } catch (error) {
-    const message =
-      error instanceof HttpError
-        ? error.message
-        : error instanceof AgentProviderError
-          ? {
-              quota: 'Dostawca AI odrzucił żądanie (limit). Spróbuj później.',
-              unavailable: 'Model AI jest chwilowo niedostępny. Spróbuj ponownie.',
-              timeout: 'Model AI nie odpowiedział na czas. Spróbuj ponownie.',
-              configuration: 'AI nie jest poprawnie skonfigurowane.',
-            }[error.kind]
-          : 'Nie udało się wygenerować tej części notatek. Spróbuj ponownie.';
-    await env.DB.prepare(
-      "UPDATE document_notes SET state='failed',error=?,lease_until=0,updated_at=strftime('%Y-%m-%dT%H:%M:%fZ','now') WHERE id=? AND user_id=?",
-    )
-      .bind(message, noteId, userId)
-      .run();
-    if (error instanceof HttpError && error.status === 429) throw error;
+    await failNote(env, userId, note.id, error);
   }
-  return view(await ownedNote(env, userId, noteId));
+  return view(await ownedNote(env, userId, note.id));
+}
+
+export async function advanceNotes(env: Env, userId: string, noteId: string) {
+  const job = await prepareAdvance(env, userId, noteId);
+  return 'done' in job ? job.done : runAdvance(env, userId, job);
+}
+
+/**
+ * Server-sent events variant of advance. Mobile networks and proxies drop a request that stays
+ * silent for the whole model call, so comment heartbeats keep it alive; the final event carries
+ * the note. The work itself is detached from the connection and finishes even after a drop.
+ */
+async function streamAdvance(
+  env: Env,
+  userId: string,
+  noteId: string,
+  ctx?: ExecutionContext,
+): Promise<Response> {
+  const job = await prepareAdvance(env, userId, noteId);
+  if ('done' in job) return json(job.done);
+  const work = runAdvance(env, userId, job);
+  ctx?.waitUntil(work.catch(() => undefined));
+  const encoder = new TextEncoder();
+  const { readable, writable } = new TransformStream<Uint8Array, Uint8Array>();
+  const writer = writable.getWriter();
+  const send = (chunk: string) => writer.write(encoder.encode(chunk)).catch(() => undefined);
+  void send(': start\n\n');
+  const heartbeat = setInterval(() => void send(': ping\n\n'), HEARTBEAT_MS);
+  void work
+    .then(
+      (note) => send(`event: note\ndata: ${JSON.stringify(note)}\n\n`),
+      () =>
+        send(
+          `event: error\ndata: ${JSON.stringify({ error: { code: 'INTERNAL_ERROR', message: 'Nie udało się zapisać notatek. Spróbuj ponownie.' } })}\n\n`,
+        ),
+    )
+    .finally(() => {
+      clearInterval(heartbeat);
+      void writer.close().catch(() => undefined);
+    });
+  return new Response(readable, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-store, no-transform',
+      'X-Accel-Buffering': 'no',
+    },
+  });
 }
 
 export async function handleNotes(
   request: Request,
   env: Env,
   user: User,
+  ctx?: ExecutionContext,
 ): Promise<Response | null> {
   const parts = new URL(request.url).pathname.split('/').filter(Boolean);
   if (parts[1] === 'documents' && parts[2] && parts[3] === 'notes' && request.method === 'POST')
@@ -340,7 +465,9 @@ export async function handleNotes(
   if (request.method === 'GET' && !parts[3])
     return json(view(await ownedNote(env, user.id, noteId)));
   if (request.method === 'POST' && parts[3] === 'advance')
-    return json(await advanceNotes(env, user.id, noteId));
+    return request.headers.get('accept')?.includes('text/event-stream')
+      ? streamAdvance(env, user.id, noteId, ctx)
+      : json(await advanceNotes(env, user.id, noteId));
   if (request.method === 'DELETE' && !parts[3]) {
     await ownedNote(env, user.id, noteId);
     await env.DB.prepare('DELETE FROM document_notes WHERE id=? AND user_id=?')

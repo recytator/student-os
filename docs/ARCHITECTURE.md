@@ -77,7 +77,7 @@ Migracja `0007_plan_tasks_notes.sql` (v0.2) dodaje do `class_schedules` pola `cl
 
 ## Notatki AI
 
-Klient wyodrębnia tekst na urządzeniu (PDF.js; PPTX i DOCX przez wbudowany czytnik ZIP i `DecompressionStream`). Serwer dzieli tekst na części do 22 000 znaków (maks. 8 części), a każde żądanie `advance` wykonuje jedno wywołanie modelu z JSON Schema po stronie dostawcy. Wynik jest traktowany jako niezaufany: serwer obcina pola, odrzuca puste sekcje i numery stron spoza części. Wywołania notatek liczą się do wspólnego dziennego limitu 24 wywołań (`ai_usage.calls`); nie zużywają limitu 4 analiz terminów.
+Klient wyodrębnia tekst na urządzeniu (PDF.js; PPTX i DOCX przez wbudowany czytnik ZIP i `DecompressionStream`). Serwer dzieli tekst na części do 14 000 znaków (maks. 12 części), a każde żądanie `advance` wykonuje jedno wywołanie modelu z JSON Schema po stronie dostawcy. Klient prosi o odpowiedź jako `text/event-stream`: serwer co 10 s wysyła komentarz-heartbeat (sieci komórkowe i proxy zrywają ciche połączenia), a wynik przychodzi jako ostatnie zdarzenie `note`. Wywołanie modelu nie zależy od połączenia (`waitUntil`), więc po zerwaniu część zwykle i tak zostaje zapisana; klient widzi `busy_ms` (pozostała dzierżawa) lub `409 NOTES_BUSY` z `retry_after_ms`, czeka i kontynuuje, a po powrocie karty na pierwszy plan wznawia pracę sam. Odpowiedź uciętą przez budżet tokenów serwer odczytuje do ostatniego kompletnego elementu zamiast odrzucać całą część. Wynik jest traktowany jako niezaufany: serwer obcina pola, odrzuca puste sekcje i numery stron spoza części. Wywołania notatek liczą się do wspólnego dziennego limitu 24 wywołań (`ai_usage.calls`); nie zużywają limitu 4 analiz terminów.
 
 ## Przepływ agentowy
 

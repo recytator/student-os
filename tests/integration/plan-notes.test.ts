@@ -221,6 +221,76 @@ describe('notatki AI z dokumentu', () => {
     expect((await request(`/notes/${note.id}`)).status).toBe(404);
   });
 
+  it('strumieniuje advance z heartbeatem i kończy część mimo zerwanego połączenia', async () => {
+    const documentId = await importDocument();
+    const note = await body(await request(`/documents/${documentId}/notes`, 'POST', {}));
+    let release!: () => void;
+    ai.mockImplementationOnce(
+      () => new Promise((resolve) => (release = () => resolve(notesResponse([1])))),
+    );
+    const waits: Promise<unknown>[] = [];
+    const streamed = await worker.fetch(
+      new Request(`${origin}/api/notes/${note.id}/advance`, {
+        method: 'POST',
+        headers: { Origin: origin, Accept: 'text/event-stream' },
+      }),
+      env,
+      {
+        waitUntil: (promise: Promise<unknown>) => void waits.push(promise),
+      } as unknown as ExecutionContext,
+    );
+    expect(streamed.headers.get('content-type')).toContain('text/event-stream');
+    expect(streamed.headers.get('cache-control')).toContain('no-transform');
+    // The client disconnects: the stream is cancelled while the model is still working.
+    await streamed.body!.cancel();
+    const busy = await request(`/notes/${note.id}/advance`, 'POST');
+    expect(busy.status).toBe(409);
+    expect((await body(busy)).error.details.retry_after_ms).toBeGreaterThan(1000);
+    expect((await body(await request(`/notes/${note.id}`))).busy_ms).toBeGreaterThan(0);
+    release();
+    await Promise.all(waits);
+    const saved = await body(await request(`/notes/${note.id}`));
+    expect(saved).toMatchObject({ state: 'ready', chunks_done: 1, busy_ms: 0 });
+    // A connected client receives the result as the final event.
+    const retry = await body(await request(`/documents/${documentId}/notes`, 'POST', {}));
+    const live = await worker.fetch(
+      new Request(`${origin}/api/notes/${retry.id}/advance`, {
+        method: 'POST',
+        headers: { Origin: origin, Accept: 'text/event-stream' },
+      }),
+      env,
+    );
+    const text = await live.text();
+    expect(text.startsWith(': start')).toBe(true);
+    const event = text.split('\n\n').find((block) => block.startsWith('event: note'))!;
+    expect(JSON.parse(event.split('data: ')[1]!)).toMatchObject({ state: 'ready' });
+  });
+
+  it('zachowuje gotowe sekcje z odpowiedzi uciętej przez limit tokenów', async () => {
+    const documentId = await importDocument();
+    const note = await body(await request(`/documents/${documentId}/notes`, 'POST', {}));
+    const full = JSON.stringify({
+      title: 'Organizacja',
+      summary: 'Zasady.',
+      sections: [
+        { heading: 'Zaliczenie', pages: [1], points: ['Projekt.'] },
+        {
+          heading: 'Kolokwium',
+          pages: [2],
+          points: ['Pisemne, w grudniu i jeszcze więcej tekstu'],
+        },
+      ],
+      key_terms: [],
+      questions: [],
+    });
+    ai.mockResolvedValueOnce({
+      choices: [{ message: { content: full.slice(0, full.indexOf('w grudniu')) } }],
+    });
+    const ready = await body(await request(`/notes/${note.id}/advance`, 'POST'));
+    expect(ready.state).toBe('ready');
+    expect(ready.content.parts[0].sections.map((s: any) => s.heading)).toEqual(['Zaliczenie']);
+  });
+
   it('przypisuje dokument do własnego przedmiotu', async () => {
     const documentId = await importDocument();
     const subject = await body(await request('/subjects', 'POST', { name: 'AI' }));
